@@ -695,3 +695,50 @@ if __name__ == "__main__":
     print("Bulletproof 5-10k domain analysis with smart persistence\n")
     
     asyncio.run(main())
+        print(f"📊 PROGRESS TOWARD 10,000 GOAL:")
+        print(f"   Current domains: {len(existing):,}")
+        print(f"   Remaining needed: {10000 - len(existing):,}")
+        print(f"   Progress: {(len(existing)/10000)*100:.1f}%\n")
+        
+        # Run discovery
+        results = await discovery.run_enterprise_discovery(target_domains=5000)
+        
+        print(f"\n🏆 RESULTS SUMMARY")
+        print("=" * 60)
+        
+        if results:
+            # Categorize results
+            premium = [r for r in results if r.overall_score >= 80]
+            high_value = [r for r in results if 60 <= r.overall_score < 80]
+            medium_value = [r for r in results if 40 <= r.overall_score < 60]
+            
+            print(f"🥇 Premium (80+): {len(premium):,} domains")
+            print(f"🥈 High Value (60-79): {len(high_value):,} domains")
+            print(f"🥉 Medium Value (40-59): {len(medium_value):,} domains")
+            
+            # Show top results
+            if premium:
+                print(f"\n🏆 TOP PREMIUM DOMAINS:")
+                for result in premium[:5]:
+                    print(f"   {result.domain:<25} Score: {result.overall_score:.1f}")
+                    print(f"     Premium DSPs: {len(result.premium_dsps):3d} | "
+                          f"Direct: {result.direct_deals:3d} | "
+                          f"Slots: {result.estimated_ad_slots:3d}")
+            
+            # Export results
+            df = pd.DataFrame([asdict(r) for r in results])
+            filename = f"enterprise_results_{discovery.session_id}.csv"
+            df.to_csv(filename, index=False)
+            print(f"\n📁 Results exported to: {filename}")
+            
+        else:
+            print("No successful results found")
+            
+    except Exception as e:
+        logger.error(f"Main execution failed: {e}")
+
+if __name__ == "__main__":
+    print("🚀 Enterprise Domain Discovery System")
+    print("Bulletproof 5-10k domain analysis with smart persistence\n")
+    
+    asyncio.run(main())
