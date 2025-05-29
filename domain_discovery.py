@@ -12,11 +12,25 @@ import sqlite3
 import re
 import json
 import logging
+import os
 from datetime import datetime
 from typing import List, Dict, Tuple, Optional
 from dataclasses import dataclass
 from urllib.parse import urlparse
 from bs4 import BeautifulSoup
+
+# Optional LLM imports
+try:
+    import openai
+    HAS_OPENAI = True
+except ImportError:
+    HAS_OPENAI = False
+
+try:
+    import anthropic
+    HAS_ANTHROPIC = True
+except ImportError:
+    HAS_ANTHROPIC = False
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -34,6 +48,11 @@ class AdInventoryResult:
     inventory_score: float
     b2b_relevance: float
     overall_score: float
+    # LLM enhancement fields
+    llm_recommendation: Optional[str] = None
+    llm_score: Optional[float] = None
+    llm_analysis: Optional[str] = None
+    final_score: Optional[float] = None
 
 class HighROIDiscovery:
     """Optimized discovery system focused on high-value ad inventory"""
@@ -250,6 +269,216 @@ class HighROIDiscovery:
             overall_score=overall_score
         )
 
+    async def get_page_content_for_llm(self, domain: str) -> str:
+        """Get clean page content for LLM analysis"""
+        session = await self.get_session()
+        url = f"https://{domain}"
+        
+        try:
+            async with session.get(url) as response:
+                if response.status == 200:
+                    content = await response.text()
+                    soup = BeautifulSoup(content, 'html.parser')
+                    
+                    # Remove script and style elements
+                    for script in soup(["script", "style", "nav", "footer"]):
+                        script.decompose()
+                    
+                    # Get clean text
+                    text = soup.get_text()
+                    lines = (line.strip() for line in text.splitlines())
+                    chunks = (phrase.strip() for line in lines for phrase in line.split("  "))
+                    text = '\n'.join(chunk for chunk in chunks if chunk)
+                    
+                    # Limit to first 3000 characters for LLM analysis
+                    return text[:3000]
+                return ""
+        except Exception:
+            return ""
+
+    async def llm_analyze_with_openai(self, domain: str, content: str, metrics: Dict) -> Dict:
+        """Analyze domain with OpenAI for final recommendation"""
+        if not HAS_OPENAI:
+            return {}
+            
+        api_key = os.getenv("OPENAI_API_KEY")
+        if not api_key:
+            return {}
+            
+        try:
+            client = openai.OpenAI(api_key=api_key)
+            
+            prompt = f"""Analyze this website for B2B advertising suitability:
+
+Domain: {domain}
+Ad Inventory: {metrics['ad_slots']} slots, {metrics['direct_deals']} direct deals
+Premium DSPs: {len(metrics['premium_dsps'])}
+Content Preview: {content[:1500]}
+
+As an advertising expert, provide:
+1. RECOMMENDATION: APPROVE/REJECT/CAUTION
+2. SCORE: 0-100 (advertising value)
+3. REASONING: 2-3 sentences explaining your decision
+
+Focus on: professional content quality, brand safety, B2B audience relevance, and advertising inventory quality."""
+            
+            response = client.chat.completions.create(
+                model="gpt-3.5-turbo",
+                messages=[{"role": "user", "content": prompt}],
+                max_tokens=200,
+                temperature=0.3
+            )
+            
+            analysis = response.choices[0].message.content or ""
+            
+            # Parse response
+            recommendation = "CAUTION"
+            score = 50.0
+            reasoning = analysis
+            
+            if "APPROVE" in analysis.upper():
+                recommendation = "APPROVE"
+            elif "REJECT" in analysis.upper():
+                recommendation = "REJECT"
+                
+            # Extract score if present
+            import re
+            score_match = re.search(r'SCORE[:\s]*(\d+)', analysis.upper())
+            if score_match:
+                score = float(score_match.group(1))
+                
+            return {
+                'recommendation': recommendation,
+                'score': score,
+                'analysis': reasoning
+            }
+            
+        except Exception as e:
+            logger.warning(f"OpenAI analysis failed for {domain}: {e}")
+            return {}
+
+    async def llm_analyze_with_anthropic(self, domain: str, content: str, metrics: Dict) -> Dict:
+        """Analyze domain with Anthropic for final recommendation"""
+        if not HAS_ANTHROPIC:
+            return {}
+            
+        api_key = os.getenv("ANTHROPIC_API_KEY")
+        if not api_key:
+            return {}
+            
+        try:
+            client = anthropic.Anthropic(api_key=api_key)
+            
+            prompt = f"""Analyze this website for B2B advertising suitability:
+
+Domain: {domain}
+Ad Inventory: {metrics['ad_slots']} slots, {metrics['direct_deals']} direct deals
+Premium DSPs: {len(metrics['premium_dsps'])}
+Content Preview: {content[:1500]}
+
+As an advertising expert, provide:
+1. RECOMMENDATION: APPROVE/REJECT/CAUTION
+2. SCORE: 0-100 (advertising value)
+3. REASONING: 2-3 sentences explaining your decision
+
+Focus on: professional content quality, brand safety, B2B audience relevance, and advertising inventory quality."""
+            
+            response = client.messages.create(
+                model="claude-3-haiku-20240307",
+                max_tokens=200,
+                messages=[{"role": "user", "content": prompt}]
+            )
+            
+            analysis = getattr(response.content[0], 'text', '') or ""
+            
+            # Parse response
+            recommendation = "CAUTION"
+            score = 50.0
+            reasoning = analysis
+            
+            if "APPROVE" in analysis.upper():
+                recommendation = "APPROVE"
+            elif "REJECT" in analysis.upper():
+                recommendation = "REJECT"
+                
+            # Extract score if present
+            import re
+            score_match = re.search(r'SCORE[:\s]*(\d+)', analysis.upper())
+            if score_match:
+                score = float(score_match.group(1))
+                
+            return {
+                'recommendation': recommendation,
+                'score': score,
+                'analysis': reasoning
+            }
+            
+        except Exception as e:
+            logger.warning(f"Anthropic analysis failed for {domain}: {e}")
+            return {}
+
+    async def enhance_with_llm(self, results: List[AdInventoryResult]) -> List[AdInventoryResult]:
+        """Enhance high-scoring results with LLM analysis for final recommendation"""
+        if not results:
+            return results
+            
+        # Only analyze domains with good base scores (efficiency)
+        candidates = [r for r in results if r.overall_score >= 60]
+        
+        if not candidates:
+            return results
+            
+        print(f"\n🤖 LLM ENHANCEMENT PHASE")
+        print("-" * 40)
+        print(f"Running AI analysis on {len(candidates)} high-scoring domains...")
+        
+        api_available = (HAS_OPENAI and os.getenv("OPENAI_API_KEY")) or (HAS_ANTHROPIC and os.getenv("ANTHROPIC_API_KEY"))
+        
+        if not api_available:
+            print("⚠️  No LLM API keys found - skipping AI enhancement")
+            print("   Set OPENAI_API_KEY or ANTHROPIC_API_KEY for AI analysis")
+            return results
+            
+        enhanced_count = 0
+        
+        for result in candidates:
+            # Get content for LLM analysis
+            content = await self.get_page_content_for_llm(result.domain)
+            if not content:
+                continue
+                
+            # Prepare metrics for LLM
+            metrics = {
+                'ad_slots': result.estimated_ad_slots,
+                'direct_deals': result.direct_deals,
+                'premium_dsps': result.premium_dsps
+            }
+            
+            # Try OpenAI first, then Anthropic
+            llm_result = {}
+            if HAS_OPENAI and os.getenv("OPENAI_API_KEY"):
+                llm_result = await self.llm_analyze_with_openai(result.domain, content, metrics)
+            elif HAS_ANTHROPIC and os.getenv("ANTHROPIC_API_KEY"):
+                llm_result = await self.llm_analyze_with_anthropic(result.domain, content, metrics)
+                
+            if llm_result:
+                result.llm_recommendation = llm_result.get('recommendation', 'CAUTION')
+                result.llm_score = llm_result.get('score', 50.0)
+                result.llm_analysis = llm_result.get('analysis', 'No analysis available')
+                
+                # Calculate final score (weighted combination)
+                result.final_score = (result.overall_score * 0.6) + ((result.llm_score or 50.0) * 0.4)
+                enhanced_count += 1
+                
+                logger.info(f"LLM enhanced {result.domain}: {result.llm_recommendation} (Score: {result.llm_score:.1f})")
+        
+        print(f"✅ Enhanced {enhanced_count} domains with LLM analysis")
+        
+        # Re-sort by final score if available, otherwise overall score
+        results.sort(key=lambda x: x.final_score if x.final_score else x.overall_score, reverse=True)
+        
+        return results
+
     def get_discovery_targets(self) -> List[str]:
         """Get list of domains to analyze"""
         # High-traffic domains known to have good ad inventory
@@ -344,6 +573,9 @@ async def main():
         # Run discovery
         results = await discovery.run_discovery()
         
+        # Enhance with LLM analysis for final recommendations
+        results = await discovery.enhance_with_llm(results)
+        
         # Categorize results
         premium = [r for r in results if r.overall_score >= 80]
         high_value = [r for r in results if 60 <= r.overall_score < 80]
@@ -355,10 +587,14 @@ async def main():
         
         print(f"\n🥇 PREMIUM INVENTORY ({len(premium)} domains):")
         for result in premium:
-            print(f"   {result.domain:<25} Score: {result.overall_score:.1f}")
+            score_display = f"Final: {result.final_score:.1f}" if result.final_score else f"Score: {result.overall_score:.1f}"
+            print(f"   {result.domain:<25} {score_display}")
             print(f"      Premium DSPs: {len(result.premium_dsps):3d} | "
                   f"Direct Deals: {result.direct_deals:3d} | "
                   f"Ad Slots: {result.estimated_ad_slots:3d}")
+            if result.llm_recommendation:
+                print(f"      🤖 AI: {result.llm_recommendation} | LLM Score: {result.llm_score:.1f}")
+                print(f"      💭 {result.llm_analysis[:100]}..." if result.llm_analysis and len(result.llm_analysis) > 100 else f"      💭 {result.llm_analysis}")
         
         print(f"\n🥈 HIGH VALUE ({len(high_value)} domains):")
         for result in high_value:
