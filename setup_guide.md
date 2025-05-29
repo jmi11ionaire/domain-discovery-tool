@@ -1,4 +1,4 @@
-# Setup Guide for AI-Enhanced Publisher Discovery System
+p# Setup Guide for AI-Enhanced Publisher Discovery System
 
 ## Quick Start
 
