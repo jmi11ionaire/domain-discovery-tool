@@ -479,34 +479,68 @@ Focus on: professional content quality, brand safety, B2B audience relevance, an
         
         return results
 
+    def load_existing_domains(self) -> set:
+        """Load existing approved domains to avoid duplicates"""
+        try:
+            with open('existing_domains.txt', 'r') as f:
+                domains = {line.strip().replace('www.', '') for line in f if line.strip()}
+                return domains
+        except FileNotFoundError:
+            return set()
+    
     def get_discovery_targets(self) -> List[str]:
-        """Get list of domains to analyze"""
-        # High-traffic domains known to have good ad inventory
-        return [
+        """Get list of NEW domains to analyze (excluding existing ones)"""
+        existing = self.load_existing_domains()
+        
+        # Comprehensive discovery targets based on existing domain patterns
+        all_targets = [
             # Tech/Business News
             'techcrunch.com', 'venturebeat.com', 'theverge.com', 'engadget.com',
             'mashable.com', 'cnet.com', 'zdnet.com', 'computerworld.com',
             'infoworld.com', 'networkworld.com', 'pcworld.com', 'macworld.com',
             
-            # Financial/Business
+            # Financial/Business (inspired by existing domains)
             'moneycontrol.com', 'livemint.com', 'economictimes.com',
             'business-standard.com', 'financialexpress.com', 'yourstory.com',
             'entrepreneur.com', 'inc.com', 'fastcompany.com',
             
             # Technology Focus
-            'digitaltrends.com', 'tomsguide.com', 'tomshardware.com', 'anandtech.com'
+            'digitaltrends.com', 'tomsguide.com', 'tomshardware.com', 'anandtech.com',
+            
+            # New targets based on existing domain analysis
+            'wsj.com', 'reuters.com', 'bloomberg.com', 'cnn.com', 'bbc.com',
+            'guardian.com', 'independent.co.uk', 'telegraph.co.uk', 'axios.com',
+            'crunchbase.com', 'techstars.com', 'angellist.com', 'producthunt.com',
+            'ycombinator.com', 'mit.edu', 'stanford.edu', 'harvard.edu',
+            'wharton.upenn.edu', 'kellogg.northwestern.edu', 'sloan.mit.edu'
         ]
+        
+        # Filter out existing domains
+        new_targets = []
+        for domain in all_targets:
+            clean_domain = domain.replace('www.', '')
+            if clean_domain not in existing:
+                new_targets.append(domain)
+        
+        return new_targets
 
     async def run_discovery(self, max_domains: int = 50) -> List[AdInventoryResult]:
         """Run complete high-ROI discovery process"""
+        existing = self.load_existing_domains()
+        
         print("🎯 HIGH-ROI AD INVENTORY DISCOVERY")
         print("=" * 60)
         print("Finding domains with confirmed display ad opportunities...\n")
         
+        print(f"📊 PROGRESS TOWARD 10,000 GOAL:")
+        print(f"   Current approved domains: {len(existing):,}")
+        print(f"   Remaining needed: {10000 - len(existing):,}")
+        print(f"   Progress: {(len(existing)/10000)*100:.1f}%\n")
+        
         # Get targets and analyze
         domains = self.get_discovery_targets()[:max_domains]
-        print(f"🔍 Analyzing {len(domains)} high-traffic domains...")
-        print("⏳ Filtering for ads.txt files and analyzing inventory...\n")
+        print(f"🔍 Analyzing {len(domains)} NEW high-traffic domains...")
+        print(f"⏳ Filtering for ads.txt files and analyzing inventory...\n")
         
         results = []
         domains_with_ads = 0
