@@ -4,28 +4,15 @@
 
 Your discovery system could be **10x more powerful** with these domain intelligence APIs:
 
-### **🏢 Company Intelligence APIs**
-
-#### **1. Clearbit API** 
-- **What it gives**: Company data, industry, revenue, employee count
-- **ROI**: Target companies by size/industry for better ad targeting
-- **Cost**: $99-$999/month, 1000-50k requests
-- **Example**: "Forbes.com → Media company, 1000+ employees, $100M+ revenue"
-
-#### **2. Apollo.io API**
-- **What it gives**: B2B company database, contact info, technographics  
-- **ROI**: Identify decision makers at discovered publishers
-- **Cost**: $49-$149/month
-
 ### **📊 Traffic & Authority APIs**
 
-#### **3. SimilarWeb API**
+#### **1. SimilarWeb API**
 - **What it gives**: Monthly visitors, traffic sources, audience demographics
 - **ROI**: Prioritize high-traffic domains for maximum reach
 - **Cost**: $200-$800/month
 - **Example**: "TechCrunch.com → 15M monthly visitors, 65% male audience"
 
-#### **4. Ahrefs API** 
+#### **2. Ahrefs API** 
 - **What it gives**: Domain authority, backlinks, organic keywords
 - **ROI**: Find authoritative domains that Google trusts
 - **Cost**: $99-$999/month
@@ -33,13 +20,13 @@ Your discovery system could be **10x more powerful** with these domain intellige
 
 ### **🔧 Technology Stack APIs**
 
-#### **5. BuiltWith API**
+#### **3. BuiltWith API**
 - **What it gives**: Technologies used (ad networks, analytics, CMS)
 - **ROI**: Find domains already monetized with premium ad networks
 - **Cost**: $295-$995/month  
 - **Example**: "CNN.com → Google DFP, Chartbeat, ComScore"
 
-#### **6. PublicWWW API**
+#### **4. PublicWWW API**
 - **What it gives**: Search websites by technology/code snippets
 - **ROI**: Find ALL domains with ads.txt files instantly
 - **Cost**: $29-$249/month
@@ -47,30 +34,30 @@ Your discovery system could be **10x more powerful** with these domain intellige
 
 ### **🔍 Domain Intelligence APIs**
 
-#### **7. WhoisXML API**
+#### **5. WhoisXML API**
 - **What it gives**: Domain age, registrar, ownership history
 - **ROI**: Avoid newly registered/suspicious domains
 - **Cost**: $43-$500/month
 - **Example**: "Bloomberg.com → Registered 1995, 29 years old"
 
-#### **8. SecurityTrails API**
+#### **6. SecurityTrails API**
 - **What it gives**: DNS history, subdomains, IP changes
 - **ROI**: Assess domain stability and infrastructure quality
 - **Cost**: $20-$300/month
 
-#### **9. VirusTotal API**
+#### **7. VirusTotal API**
 - **What it gives**: Domain reputation, malware detection
 - **ROI**: Ensure brand safety for advertising
 - **Cost**: Free tier available, $180/month premium
 
 ### **🌐 SEO & Competitive APIs**
 
-#### **10. SEMrush API**
+#### **8. SEMrush API**
 - **What it gives**: Keyword rankings, paid search data, competitors
 - **ROI**: Find domains competing for valuable keywords
 - **Cost**: $119-$449/month
 
-#### **11. Majestic API**
+#### **9. Majestic API**
 - **What it gives**: Backlink profiles, trust flow, citation flow
 - **ROI**: Identify trusted domains with quality link profiles
 - **Cost**: $49-$399/month
@@ -105,7 +92,7 @@ Your discovery system could be **10x more powerful** with these domain intellige
 - Cost: ~$500-1500/month in API fees
 - **ROI**: 100x faster discovery, 4x higher success rate
 
-## **🚀 Killer Application Ideas**
+## **🚀 Application Ideas**
 
 ### **1. "Ad Inventory Intelligence Platform"**
 - Real-time publisher discovery using PublicWWW + SimilarWeb
