@@ -30,8 +30,16 @@ except ImportError:
 # Import validators
 from utilities.robust_domain_validator import RobustDomainValidator
 
-logging.basicConfig(level=logging.INFO)
+# Configure logging to suppress noisy connection errors
+logging.basicConfig(level=logging.WARNING)
+logging.getLogger('aiohttp.client').setLevel(logging.WARNING)
+logging.getLogger('aiohttp.connector').setLevel(logging.WARNING)
+logging.getLogger('asyncio').setLevel(logging.WARNING)
+logging.getLogger('urllib3.connectionpool').setLevel(logging.WARNING)
+
+# Domain scanner logger at INFO level for important messages only
 logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
 
 @dataclass
 class ScanResult:

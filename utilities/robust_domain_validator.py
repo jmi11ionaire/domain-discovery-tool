@@ -12,8 +12,15 @@ import logging
 from typing import List, Optional
 import re
 
-logging.basicConfig(level=logging.INFO)
+# Configure quiet logging for connection issues
+logging.basicConfig(level=logging.WARNING)
+logging.getLogger('aiohttp.client').setLevel(logging.WARNING)
+logging.getLogger('aiohttp.connector').setLevel(logging.WARNING)
+logging.getLogger('asyncio').setLevel(logging.WARNING)
+
+# Domain validator logger - only show important messages
 logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
 
 class RobustDomainValidator:
     """Domain validator with robust SSL error handling"""
@@ -132,54 +139,41 @@ class RobustDomainValidator:
         """Validate multiple domains with enhanced error handling"""
         semaphore = asyncio.Semaphore(max_concurrent)
         
-        async def validate_with_semaphore(domain: str) -> Optional[str]:
+        async def validate_single(domain: str) -> Optional[str]:
+            """Validate single domain with complete exception suppression"""
             async with semaphore:
                 try:
-                    # Add small delay to be more respectful
-                    await asyncio.sleep(0.5)
-                    if await self.quick_validate(domain):
-                        return domain
-                except (
-                    ConnectionResetError,
-                    ConnectionRefusedError,
-                    OSError,
-                    asyncio.TimeoutError,
-                    Exception
-                ) as e:
-                    # Log connection issues at debug level only
-                    logger.debug(f"Connection issue for {domain}: {type(e).__name__}")
-                return None
+                    await asyncio.sleep(0.1)  # Small delay
+                    result = await self.quick_validate(domain)
+                    return domain if result else None
+                except Exception:
+                    return None
         
-        # Process domains in smaller batches with delays
+        # Process all domains with proper task handling
         valid_domains = []
-        batch_size = 10
+        tasks = [asyncio.create_task(validate_single(domain)) for domain in domains]
         
-        for i in range(0, len(domains), batch_size):
-            batch = domains[i:i + batch_size]
-            logger.debug(f"Processing batch {i//batch_size + 1}/{(len(domains)-1)//batch_size + 1}")
-            
-            # Create tasks for this batch
-            tasks = [validate_with_semaphore(domain) for domain in batch]
-            
-            try:
-                # Use gather with return_exceptions to handle all errors gracefully
-                results = await asyncio.gather(*tasks, return_exceptions=True)
-                
-                # Process results, ignoring exceptions
-                for result in results:
-                    if isinstance(result, str):
+        try:
+            # Use as_completed to process results as they finish
+            for completed_task in asyncio.as_completed(tasks, timeout=120):
+                try:
+                    result = await completed_task
+                    if result:
                         valid_domains.append(result)
-                    elif isinstance(result, Exception):
-                        # Silently ignore exceptions - they're logged in validate_with_semaphore
-                        pass
-                        
-            except Exception as e:
-                logger.debug(f"Batch processing error: {e}")
-                continue
-            
-            # Pause between batches to be more respectful
-            if i + batch_size < len(domains):
-                await asyncio.sleep(2)
+                except Exception:
+                    # Silently ignore individual validation failures
+                    pass
+                    
+        except asyncio.TimeoutError:
+            # Cancel any remaining tasks
+            for task in tasks:
+                if not task.done():
+                    task.cancel()
+        except Exception:
+            # Cancel all tasks on any other error
+            for task in tasks:
+                if not task.done():
+                    task.cancel()
         
         logger.info(f"📊 Validation: {len(valid_domains)}/{len(domains)} domains reachable")
         return valid_domains

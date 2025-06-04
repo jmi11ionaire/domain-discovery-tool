@@ -78,7 +78,7 @@ class ContinuousDiscoveryService:
             return 0
     
     def calculate_time_estimates(self, current_count: int, domains_needed: int) -> Dict:
-        """Calculate time estimates based on current performance"""
+        """Calculate time estimates based on current performance with safe division"""
         if self.batch_count == 0 or self.session_approved == 0:
             return {
                 'estimated_batches': max(1, domains_needed // max(1, self.batch_size // 10)),  # Assume 10% approval rate
@@ -86,19 +86,22 @@ class ContinuousDiscoveryService:
                 'approval_rate': 'Unknown'
             }
         
-        # Calculate rates
+        # Calculate rates with safe division
         elapsed_minutes = (time.time() - self.start_time) / 60
-        approval_rate = self.session_approved / self.batch_count if self.batch_count > 0 else 0.1
-        avg_batch_time = elapsed_minutes / self.batch_count if self.batch_count > 0 else 2.0
+        approval_rate = self.session_approved / max(1, self.batch_count)
+        avg_batch_time = elapsed_minutes / max(1, self.batch_count)
         
         # Estimate remaining work
         estimated_batches_needed = max(1, int(domains_needed / max(0.1, approval_rate)))
         estimated_time_minutes = estimated_batches_needed * avg_batch_time
         
+        # Safe percentage calculation
+        approval_percentage = (approval_rate / max(1, self.batch_size)) * 100 if self.batch_size > 0 else 0
+        
         return {
             'estimated_batches': estimated_batches_needed,
             'estimated_time_minutes': f"{estimated_time_minutes:.1f} minutes ({estimated_time_minutes/60:.1f} hours)",
-            'approval_rate': f"{approval_rate:.1f} per batch ({approval_rate/self.batch_size*100:.1f}%)",
+            'approval_rate': f"{approval_rate:.1f} per batch ({approval_percentage:.1f}%)",
             'avg_batch_time': f"{avg_batch_time:.1f} minutes"
         }
     
