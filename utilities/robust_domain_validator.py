@@ -12,15 +12,26 @@ import logging
 from typing import List, Optional
 import re
 
-# Configure quiet logging for connection issues
-logging.basicConfig(level=logging.WARNING)
-logging.getLogger('aiohttp.client').setLevel(logging.WARNING)
-logging.getLogger('aiohttp.connector').setLevel(logging.WARNING)
-logging.getLogger('asyncio').setLevel(logging.WARNING)
+# Configure AGGRESSIVE logging suppression for ALL connection issues
+logging.basicConfig(level=logging.CRITICAL)
+logging.getLogger('aiohttp').setLevel(logging.CRITICAL)
+logging.getLogger('aiohttp.client').setLevel(logging.CRITICAL)
+logging.getLogger('aiohttp.connector').setLevel(logging.CRITICAL)
+logging.getLogger('aiohttp.client_exceptions').setLevel(logging.CRITICAL)
+logging.getLogger('asyncio').setLevel(logging.CRITICAL)
+logging.getLogger('urllib3').setLevel(logging.CRITICAL)
+logging.getLogger('ssl').setLevel(logging.CRITICAL)
 
 # Domain validator logger - only show important messages
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
+
+# Completely suppress asyncio warnings
+import warnings
+warnings.filterwarnings("ignore", category=RuntimeWarning)
+
+# Suppress specific aiohttp future warnings
+warnings.filterwarnings("ignore", message=".*Future exception was never retrieved.*")
 
 class RobustDomainValidator:
     """Domain validator with robust SSL error handling"""

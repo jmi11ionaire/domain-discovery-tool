@@ -30,16 +30,24 @@ except ImportError:
 # Import validators
 from utilities.robust_domain_validator import RobustDomainValidator
 
-# Configure logging to suppress noisy connection errors
-logging.basicConfig(level=logging.WARNING)
-logging.getLogger('aiohttp.client').setLevel(logging.WARNING)
-logging.getLogger('aiohttp.connector').setLevel(logging.WARNING)
-logging.getLogger('asyncio').setLevel(logging.WARNING)
-logging.getLogger('urllib3.connectionpool').setLevel(logging.WARNING)
+# Configure AGGRESSIVE logging suppression for connection errors
+logging.basicConfig(level=logging.CRITICAL)
+logging.getLogger('aiohttp').setLevel(logging.CRITICAL)
+logging.getLogger('aiohttp.client').setLevel(logging.CRITICAL)
+logging.getLogger('aiohttp.connector').setLevel(logging.CRITICAL)
+logging.getLogger('aiohttp.client_exceptions').setLevel(logging.CRITICAL)
+logging.getLogger('asyncio').setLevel(logging.CRITICAL)
+logging.getLogger('urllib3').setLevel(logging.CRITICAL)
+logging.getLogger('urllib3.connectionpool').setLevel(logging.CRITICAL)
+logging.getLogger('ssl').setLevel(logging.CRITICAL)
 
 # Domain scanner logger at INFO level for important messages only
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
+
+# Completely suppress asyncio warnings about unhandled futures
+import warnings
+warnings.filterwarnings("ignore", category=RuntimeWarning)
 
 @dataclass
 class ScanResult:
@@ -351,11 +359,31 @@ class OptimizedDomainScanner:
         return attempted_domains
     
     async def get_session(self):
-        """Get aiohttp session"""
+        """Get aiohttp session with robust error suppression"""
         if self.session is None:
+            # Create SSL context that completely ignores errors
+            import ssl
+            ssl_context = ssl.create_default_context()
+            ssl_context.check_hostname = False
+            ssl_context.verify_mode = ssl.CERT_NONE
+            
+            # Conservative timeout and connection settings
             timeout = aiohttp.ClientTimeout(total=self.config.config['validation']['timeout_seconds'])
+            
+            # Create connector with aggressive error suppression
+            connector = aiohttp.TCPConnector(
+                ssl=ssl_context,
+                limit=5,
+                limit_per_host=2,
+                ttl_dns_cache=300,
+                use_dns_cache=True,
+                keepalive_timeout=30,
+                enable_cleanup_closed=True
+            )
+            
             self.session = aiohttp.ClientSession(
                 timeout=timeout,
+                connector=connector,
                 headers={'User-Agent': 'Mozilla/5.0 (compatible; OptimizedDomainScanner/2.0)'}
             )
         return self.session
@@ -593,15 +621,25 @@ Forums and local news sites are acceptable."""
             logger.debug(f"Failed to store metric {metric_name}: {e}")
     
     async def check_ads_txt(self, domain: str) -> Tuple[bool, Dict]:
-        """Enhanced ads.txt analysis"""
+        """Enhanced ads.txt analysis with complete error suppression"""
         session = await self.get_session()
         
-        try:
-            async with session.get(f"https://{domain}/ads.txt") as response:
-                if response.status == 200:
-                    content = await response.text()
-                    return True, self._parse_ads_txt(content)
+        # Create task with error suppression
+        async def _safe_ads_txt_request():
+            try:
+                async with session.get(f"https://{domain}/ads.txt") as response:
+                    if response.status == 200:
+                        content = await response.text()
+                        return True, self._parse_ads_txt(content)
+                    return False, {}
+            except Exception:
                 return False, {}
+        
+        try:
+            task = asyncio.create_task(_safe_ads_txt_request())
+            # Add done callback to prevent "Future exception was never retrieved"
+            task.add_done_callback(lambda t: t.exception() if not t.cancelled() else None)
+            return await task
         except Exception:
             return False, {}
     
@@ -647,7 +685,7 @@ Forums and local news sites are acceptable."""
         return analysis
     
     async def analyze_content(self, domain: str) -> Tuple[float, Dict]:
-        """Enhanced content analysis with better scoring"""
+        """Enhanced content analysis with complete error suppression"""
         session = await self.get_session()
         content_details = {
             'has_meaningful_content': False,
@@ -658,59 +696,69 @@ Forums and local news sites are acceptable."""
             'professional_indicators': 0
         }
         
+        # Create task with error suppression
+        async def _safe_content_request():
+            try:
+                async with session.get(f"https://{domain}", allow_redirects=True) as response:
+                    if response.status == 200:
+                        html_content = await response.text()
+                        soup = BeautifulSoup(html_content, 'html.parser')
+                        
+                        # Clean text extraction
+                        for script in soup(["script", "style", "nav", "footer", "header"]):
+                            script.decompose()
+                        
+                        text_content = soup.get_text().lower()
+                        content_details['content_length'] = len(text_content)
+                        content_details['has_meaningful_content'] = len(text_content) > 1000
+                        
+                        # Enhanced ad slot detection
+                        ad_selectors = [
+                            {'class_': re.compile(r'ad|banner|advertisement|sponsor|adsense')},
+                            {'id': re.compile(r'ad|banner|advertisement|sponsor')},
+                            'iframe[src*="googlesyndication"]',
+                            'script[src*="googlesyndication"]',
+                            'script[src*="amazon-adsystem"]'
+                        ]
+                        
+                        ad_count = 0
+                        for selector in ad_selectors:
+                            if isinstance(selector, dict):
+                                ad_count += len(soup.find_all('div', **selector))
+                            else:
+                                ad_count += len(soup.select(selector))
+                        
+                        content_details['ad_slots_detected'] = min(10, ad_count)
+                        
+                        # Enhanced quality indicators
+                        quality_terms = [
+                            'subscribe', 'newsletter', 'premium', 'insights', 'analysis',
+                            'whitepaper', 'report', 'research', 'industry', 'professional'
+                        ]
+                        
+                        quality_count = sum(1 for term in quality_terms if term in text_content)
+                        content_details['quality_indicators'] = min(10, quality_count)
+                        
+                        # Enhanced B2B relevance scoring
+                        b2b_keywords = self.config.config['discovery']['quality_keywords']
+                        b2b_count = sum(text_content.count(keyword) for keyword in b2b_keywords)
+                        content_details['b2b_relevance_score'] = min(100, (b2b_count / len(b2b_keywords)) * 20)
+                        
+                        # Professional indicators
+                        professional_terms = ['enterprise', 'solution', 'platform', 'service', 'technology']
+                        professional_count = sum(1 for term in professional_terms if term in text_content)
+                        content_details['professional_indicators'] = min(5, professional_count)
+                        
+            except Exception:
+                pass  # Silently ignore all content analysis errors
+        
         try:
-            async with session.get(f"https://{domain}", allow_redirects=True) as response:
-                if response.status == 200:
-                    html_content = await response.text()
-                    soup = BeautifulSoup(html_content, 'html.parser')
-                    
-                    # Clean text extraction
-                    for script in soup(["script", "style", "nav", "footer", "header"]):
-                        script.decompose()
-                    
-                    text_content = soup.get_text().lower()
-                    content_details['content_length'] = len(text_content)
-                    content_details['has_meaningful_content'] = len(text_content) > 1000
-                    
-                    # Enhanced ad slot detection
-                    ad_selectors = [
-                        {'class_': re.compile(r'ad|banner|advertisement|sponsor|adsense')},
-                        {'id': re.compile(r'ad|banner|advertisement|sponsor')},
-                        'iframe[src*="googlesyndication"]',
-                        'script[src*="googlesyndication"]',
-                        'script[src*="amazon-adsystem"]'
-                    ]
-                    
-                    ad_count = 0
-                    for selector in ad_selectors:
-                        if isinstance(selector, dict):
-                            ad_count += len(soup.find_all('div', **selector))
-                        else:
-                            ad_count += len(soup.select(selector))
-                    
-                    content_details['ad_slots_detected'] = min(10, ad_count)
-                    
-                    # Enhanced quality indicators
-                    quality_terms = [
-                        'subscribe', 'newsletter', 'premium', 'insights', 'analysis',
-                        'whitepaper', 'report', 'research', 'industry', 'professional'
-                    ]
-                    
-                    quality_count = sum(1 for term in quality_terms if term in text_content)
-                    content_details['quality_indicators'] = min(10, quality_count)
-                    
-                    # Enhanced B2B relevance scoring
-                    b2b_keywords = self.config.config['discovery']['quality_keywords']
-                    b2b_count = sum(text_content.count(keyword) for keyword in b2b_keywords)
-                    content_details['b2b_relevance_score'] = min(100, (b2b_count / len(b2b_keywords)) * 20)
-                    
-                    # Professional indicators
-                    professional_terms = ['enterprise', 'solution', 'platform', 'service', 'technology']
-                    professional_count = sum(1 for term in professional_terms if term in text_content)
-                    content_details['professional_indicators'] = min(5, professional_count)
-                    
-        except Exception as e:
-            logger.debug(f"Content analysis failed for {domain}: {e}")
+            task = asyncio.create_task(_safe_content_request())
+            # Add done callback to prevent "Future exception was never retrieved"
+            task.add_done_callback(lambda t: t.exception() if not t.cancelled() else None)
+            await task
+        except Exception:
+            pass  # Silently ignore all errors
         
         # Enhanced scoring algorithm
         score = self._calculate_content_score(content_details)
