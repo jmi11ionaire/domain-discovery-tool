@@ -300,16 +300,29 @@ class OptimizedDomainScanner:
         """Load ALL previously attempted domains (smart memory)"""
         attempted_domains = set()
         
-        # Load from existing_domains.txt
+        # Load from existing_domains.txt (original DSP domains)
         try:
             with open('existing_domains.txt', 'r') as f:
                 for line in f:
                     domain = line.strip().replace('www.', '')
-                    if domain:
+                    if domain and not line.startswith('#'):
                         attempted_domains.add(domain)
             logger.info(f"Loaded {len(attempted_domains)} domains from existing_domains.txt")
         except FileNotFoundError:
             logger.warning("existing_domains.txt not found")
+        
+        # Load from service_discovered_domains.txt (service discoveries)
+        try:
+            with open('service_discovered_domains.txt', 'r') as f:
+                service_count = 0
+                for line in f:
+                    domain = line.strip().replace('www.', '')
+                    if domain and not line.startswith('#'):
+                        attempted_domains.add(domain)
+                        service_count += 1
+            logger.info(f"Loaded {service_count} service-discovered domains from service_discovered_domains.txt")
+        except FileNotFoundError:
+            logger.info("service_discovered_domains.txt not found - will create on first approval")
         
         # Load ALL previously analyzed domains from database (approved AND rejected)
         try:
@@ -765,12 +778,15 @@ Forums and local news sites are acceptable."""
                 'total_before_threshold': 0
             }
             
-            # Weighted final score
-            final_score = (content_score * self.config.config['scoring']['content_weight'] + 
-                          scoring_breakdown['ads_txt_bonus'] + 
-                          scoring_breakdown['premium_platform_bonus'])
+            # Weighted final score with proper cap at 100
+            raw_final_score = (content_score * self.config.config['scoring']['content_weight'] + 
+                              scoring_breakdown['ads_txt_bonus'] + 
+                              scoring_breakdown['premium_platform_bonus'])
             
-            scoring_breakdown['total_before_threshold'] = final_score
+            final_score = min(100.0, raw_final_score)  # Cap at 100
+            
+            scoring_breakdown['total_before_threshold'] = raw_final_score
+            scoring_breakdown['final_capped_score'] = final_score
             
             # Determine status and specific rejection reason
             threshold = self.config.get_threshold()
@@ -831,6 +847,15 @@ Forums and local news sites are acceptable."""
                 config_snapshot=self.config.get_config_snapshot()
             )
     
+    def _save_approved_domain_live(self, domain: str, score: float):
+        """Immediately save approved domain to live service file"""
+        try:
+            with open('service_discovered_domains.txt', 'a') as f:
+                f.write(f"{domain}\n")
+            logger.info(f"💾 Added {domain} to service_discovered_domains.txt")
+        except Exception as e:
+            logger.error(f"Failed to save {domain} to live file: {e}")
+    
     def _save_enhanced_result(self, result: ScanResult, content_details: Dict, ads_analysis: Dict):
         """Save enhanced result to optimized database"""
         conn = sqlite3.connect(self.db_path)
@@ -876,6 +901,10 @@ Forums and local news sites are acceptable."""
         
         conn.commit()
         conn.close()
+        
+        # If domain is approved, immediately save to live file
+        if result.status == 'approved':
+            self._save_approved_domain_live(result.domain, result.score)
     
     async def run_optimized_discovery_pipeline(self, target_count: int = 30) -> Dict:
         """Run optimized discovery pipeline"""
