@@ -235,11 +235,11 @@ class ContinuousDiscoveryService:
         
         # Auto-export if requested
         if self.auto_export and final_count >= self.target_domains:
-            print(f"\n📋 Auto-exporting domains...")
+            print(f"\n📋 Auto-exporting discovered domains...")
             try:
                 import subprocess
-                subprocess.run([sys.executable, "utilities/export_domains.py"], check=True)
-                print("✅ Domains exported successfully")
+                subprocess.run([sys.executable, "utilities/export_discovered_domains.py"], check=True)
+                print("✅ Service discoveries exported successfully")
             except Exception as e:
                 print(f"❌ Export failed: {e}")
         

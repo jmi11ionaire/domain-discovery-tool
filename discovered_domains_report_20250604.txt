@@ -1,0 +1,35 @@
+SERVICE-DISCOVERED DOMAINS REPORT
+Generated: 2025-06-04 07:21:03
+Total Discovered: 6
+============================================================
+
+Domain: hbr.org
+Score: 88.4
+Analyzed: 2025-06-03 22:42:47.424071
+Source: llm_improved
+----------------------------------------
+Domain: pharmacytimes.com
+Score: 86.1
+Analyzed: 2025-06-03 22:41:13.288688
+Source: llm_improved
+----------------------------------------
+Domain: medicaleconomics.com
+Score: 85.4
+Analyzed: 2025-06-03 22:42:06.480497
+Source: llm_improved
+----------------------------------------
+Domain: healthcareit.com
+Score: 50.0
+Analyzed: 2025-06-03 22:43:41.684104
+Source: llm_improved
+----------------------------------------
+Domain: manufacturingnews.com
+Score: 48.3
+Analyzed: 2025-06-03 22:43:15.220685
+Source: llm_improved
+----------------------------------------
+Domain: cpajournal.com
+Score: 45.1
+Analyzed: 2025-06-03 22:41:02.602135
+Source: llm_improved
+----------------------------------------

@@ -1,0 +1,12 @@
+# Service-Discovered Domains - 2025-06-04 07:21:03
+# Total: 6 domains
+# Separate from existing DSP domains in existing_domains.txt
+#
+# Domain | Score | Analyzed | Source
+#
+hbr.org
+pharmacytimes.com
+medicaleconomics.com
+healthcareit.com
+manufacturingnews.com
+cpajournal.com
