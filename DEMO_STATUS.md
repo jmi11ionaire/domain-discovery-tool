@@ -43,7 +43,7 @@ python continuous_discovery_service.py --target 50 --batch-size 10 --delay 15
 
 ### **Quick Single Scan** 
 ```bash
-python optimized_domain_scanner.py
+python domain_scanner.py
 ```
 
 ### **Check Results**

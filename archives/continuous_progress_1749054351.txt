@@ -1,0 +1,5 @@
+Continuous Discovery Progress - 2025-06-04T09:25:51.273321
+Current: 49/500 domains
+Batches completed: 66
+Session approved: 43
+Runtime: 75.0 minutes

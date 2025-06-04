@@ -7,7 +7,7 @@ Runs optimized domain discovery and provides immediate analysis
 import asyncio
 import sys
 import os
-from optimized_domain_scanner import run_optimized_discovery_pipeline
+from domain_scanner import run_optimized_discovery_pipeline
 
 def run_analysis_tools():
     """Run analysis tools on the results"""
@@ -16,14 +16,14 @@ def run_analysis_tools():
     
     try:
         # Import and run comprehensive analysis
-        from analysis_tools.comprehensive_rejection_analysis import analyze_complete_rejection_patterns
+        from analysis_tools.rejection_analysis import analyze_complete_rejection_patterns
         
         print("📊 Running comprehensive rejection analysis...")
         analyze_complete_rejection_patterns()
         
     except ImportError as e:
         print(f"⚠️  Analysis tools not available: {e}")
-        print("   Run: python analysis_tools/comprehensive_rejection_analysis.py")
+        print("   Run: python analysis_tools/rejection_analysis.py")
     except Exception as e:
         print(f"❌ Analysis failed: {e}")
 
@@ -42,7 +42,7 @@ async def main():
     print("🚀 INTEGRATED DISCOVERY & ANALYSIS PIPELINE")
     print("=" * 60)
     print(f"Target domains: {target_count}")
-    print(f"Database: optimized_domain_discovery.db")
+    print(f"Database: domain_discovery.db")
     print()
     
     # Phase 1: Run optimized discovery

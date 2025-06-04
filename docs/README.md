@@ -27,7 +27,7 @@ python run_discovery_and_analysis.py 20
 
 ### Core Components
 
-1. **Optimized Domain Scanner** (`optimized_domain_scanner.py`)
+1. **Domain Scanner** (`domain_scanner.py`)
    - Production-ready scanner with proper rejection tracking
    - Configurable thresholds and scoring weights
    - Enhanced LLM discovery with fallback mechanisms
@@ -95,10 +95,10 @@ validation:
 ### Run Analysis
 ```bash
 # Comprehensive analysis with charts
-python analysis_tools/comprehensive_rejection_analysis.py
+python analysis_tools/rejection_analysis.py
 
 # Score distribution analysis
-python analysis_tools/improved_domain_analysis.py
+python analysis_tools/domain_analysis.py
 ```
 
 ### Check Results
@@ -114,7 +114,7 @@ python utilities/check_results.py
 
 ```
 domain_discovery/
-├── optimized_domain_scanner.py      # Main production scanner
+├── domain_scanner.py                # Main production scanner
 ├── run_discovery_and_analysis.py    # Integrated pipeline
 ├── requirements.txt                  # Dependencies
 │
@@ -123,8 +123,8 @@ domain_discovery/
 │   └── api_config.yaml             # API settings
 │
 ├── analysis_tools/                  # Analysis and visualization
-│   ├── comprehensive_rejection_analysis.py
-│   ├── improved_domain_analysis.py
+│   ├── rejection_analysis.py
+│   ├── domain_analysis.py
 │   └── domain_analysis_suite.py
 │
 ├── utilities/                       # Helper tools
@@ -173,7 +173,7 @@ Based on analysis of 3,064 domains:
 **High validation failure rate**
 ```bash
 # Check discovery quality
-python analysis_tools/comprehensive_rejection_analysis.py
+python analysis_tools/rejection_analysis.py
 # Look for validation failure breakdown
 ```
 

@@ -138,7 +138,7 @@ class ConfigManager:
 class OptimizedDomainScanner:
     """Production-ready domain scanner with optimized schema and tracking"""
     
-    def __init__(self, db_path: str = "optimized_domain_discovery.db"):
+    def __init__(self, db_path: str = "domain_discovery.db"):
         self.db_path = db_path
         self.session = None
         self.config = ConfigManager()

@@ -11,7 +11,7 @@ def export_discovered_domains():
     """Export only service-discovered domains to separate file"""
     
     # Get approved domains from our discovery service
-    conn = sqlite3.connect('optimized_domain_discovery.db')
+    conn = sqlite3.connect('domain_discovery.db')
     cursor = conn.cursor()
     cursor.execute("""
         SELECT domain, current_score, last_analyzed_at, discovery_source 

@@ -13,7 +13,7 @@ import sys
 import signal
 from datetime import datetime, timedelta
 from typing import Dict, Optional
-from optimized_domain_scanner import run_optimized_discovery_pipeline
+from domain_scanner import run_optimized_discovery_pipeline
 
 class ContinuousDiscoveryService:
     """Configuration-driven continuous discovery service"""
@@ -23,7 +23,7 @@ class ContinuousDiscoveryService:
         if config_override:
             self._deep_merge(self.config, config_override)
         
-        self.db_path = "optimized_domain_discovery.db"
+        self.db_path = "domain_discovery.db"
         self.start_time = time.time()
         self.batch_count = 0
         self.session_approved = 0
