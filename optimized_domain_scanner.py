@@ -297,18 +297,37 @@ class OptimizedDomainScanner:
             logger.error(f"Failed to setup LLM client: {e}")
     
     def load_existing_domains(self) -> Set[str]:
-        """Load existing domains"""
-        existing = set()
+        """Load ALL previously attempted domains (smart memory)"""
+        attempted_domains = set()
+        
+        # Load from existing_domains.txt
         try:
             with open('existing_domains.txt', 'r') as f:
                 for line in f:
                     domain = line.strip().replace('www.', '')
                     if domain:
-                        existing.add(domain)
-            logger.info(f"Loaded {len(existing)} existing domains")
+                        attempted_domains.add(domain)
+            logger.info(f"Loaded {len(attempted_domains)} domains from existing_domains.txt")
         except FileNotFoundError:
             logger.warning("existing_domains.txt not found")
-        return existing
+        
+        # Load ALL previously analyzed domains from database (approved AND rejected)
+        try:
+            conn = sqlite3.connect(self.db_path)
+            cursor = conn.cursor()
+            cursor.execute("SELECT DISTINCT domain FROM domains_analyzed")
+            db_domains = {row[0] for row in cursor.fetchall()}
+            conn.close()
+            
+            original_count = len(attempted_domains)
+            attempted_domains.update(db_domains)
+            logger.info(f"Added {len(db_domains)} previously analyzed domains from database")
+            logger.info(f"Total attempted domains: {len(attempted_domains)} (was {original_count})")
+            
+        except Exception as e:
+            logger.debug(f"Could not load database domains: {e}")
+        
+        return attempted_domains
     
     async def get_session(self):
         """Get aiohttp session"""
@@ -328,15 +347,21 @@ class OptimizedDomainScanner:
         await self.validator.close_session()
     
     async def improved_domain_discovery(self, count: int = 50) -> List[str]:
-        """Improved domain discovery with quality focus"""
-        logger.info(f"🧠 Discovering {count} high-quality domains...")
+        """Smart domain discovery that avoids previously attempted domains"""
+        logger.info(f"🧠 Discovering {count} new high-quality domains...")
         
         discovered_domains = []
         
         if self.llm_client:
             try:
-                # Improved prompt based on analysis findings
-                prompt = f"""As an expert in B2B digital advertising, discover {count} high-quality publisher domains that:
+                # Get sample of recently attempted domains for context
+                recent_attempts = self._get_recent_attempts_sample(20)
+                exclusion_context = ""
+                if recent_attempts:
+                    exclusion_context = f"\n\nDO NOT suggest these domains that have already been analyzed:\n{chr(10).join(recent_attempts)}\n"
+                
+                # Enhanced prompt with smart exclusions
+                prompt = f"""As an expert in B2B digital advertising, discover {count} NEW high-quality publisher domains that:
 
 1. Are REAL, existing websites (not made-up domains)
 2. Have active content and likely accept programmatic advertising
@@ -345,20 +370,31 @@ class OptimizedDomainScanner:
 5. Include established publishers, trade publications, and business media
 
 Quality indicators to prioritize:
-- Established media companies (like Forbes, TechCrunch tier)
-- Industry trade publications
-- Regional business journals  
-- B2B SaaS/technology sites
-- Professional service websites
-- Financial/investment content sites
+- Established media companies (like Wall Street Journal, Financial Times tier)
+- Industry trade publications (like Manufacturing News, Supply Chain Quarterly)
+- Regional business journals (like Seattle Business, Austin Business Journal)
+- B2B SaaS/technology sites (like SaaS Magazine, IT World)
+- Professional service websites (like Legal Affairs, HR Executive)
+- Financial/investment content sites (like Investment News, Pension & Investments)
+
+{exclusion_context}
+
+Focus on discovering domains in these categories:
+- Healthcare/Medical trade publications
+- Manufacturing & Industrial publications  
+- Real Estate & Construction industry sites
+- Professional services (Legal, Accounting, HR)
+- Technology verticals (IoT, Cybersecurity, Cloud)
+- Regional business publications from different states/cities
 
 Return ONLY the domain names (like "example.com"), one per line.
 Focus on domains that actually exist and are reachable.
-Avoid: Social media, marketplaces, forums, personal blogs."""
+Avoid: Social media, marketplaces, personal blogs, government sites.
+Forums and local news sites are acceptable."""
 
                 response = self.llm_client.messages.create(
                     model="claude-3-haiku-20240307",
-                    max_tokens=1200,
+                    max_tokens=1500,
                     messages=[{"role": "user", "content": prompt}]
                 )
                 
@@ -383,24 +419,72 @@ Avoid: Social media, marketplaces, forums, personal blogs."""
             except Exception as e:
                 logger.warning(f"LLM discovery failed: {e}")
         
-        # Fallback to curated list if LLM fails or insufficient results
+        # Smart fallback with category rotation
         if len(discovered_domains) < count // 2:
-            logger.info("🔄 Using fallback discovery...")
+            logger.info("🔄 Using smart fallback discovery...")
             fallback_domains = self._get_quality_fallback_domains()
             discovered_domains.extend(fallback_domains)
         
-        # Remove duplicates and existing domains
+        # Remove duplicates and ALL previously attempted domains
         unique_domains = []
         seen = set()
+        skipped_existing = 0
+        
         for domain in discovered_domains:
             if domain not in seen and domain not in self.existing_domains:
                 unique_domains.append(domain)
                 seen.add(domain)
+            elif domain in self.existing_domains:
+                skipped_existing += 1
+        
+        if skipped_existing > 0:
+            logger.info(f"🧠 Smart exclusion: Skipped {skipped_existing} already-attempted domains")
         
         # Track discovery quality
-        self._track_discovery_quality(len(unique_domains), 'llm_improved')
+        self._track_discovery_quality(len(unique_domains), 'llm_smart_exclusion')
         
         return unique_domains[:count]
+    
+    def _get_recent_attempts_sample(self, limit: int = 20) -> List[str]:
+        """Get sample of recently attempted domains for LLM context"""
+        try:
+            conn = sqlite3.connect(self.db_path)
+            cursor = conn.cursor()
+            cursor.execute("""
+                SELECT domain FROM domains_analyzed 
+                ORDER BY last_analyzed_at DESC 
+                LIMIT ?
+            """, (limit,))
+            recent = [row[0] for row in cursor.fetchall()]
+            conn.close()
+            return recent
+        except Exception:
+            return []
+    
+    async def analyze_direct_domains(self, domains: List[str], discovery_source: str = 'direct_input') -> List[ScanResult]:
+        """Analyze directly provided domains (future unlock feature)"""
+        logger.info(f"🎯 Analyzing {len(domains)} directly provided domains...")
+        
+        results = []
+        
+        # Validate domains first
+        validated_domains = await self.enhanced_validate_domains(domains)
+        logger.info(f"⚡ {len(validated_domains)}/{len(domains)} domains are reachable")
+        
+        # Analyze each domain
+        for i, domain in enumerate(validated_domains, 1):
+            result = await self.enhanced_scan_domain(domain, discovery_source=discovery_source)
+            if result:
+                results.append(result)
+            
+            if i % 10 == 0:
+                approved_count = len([r for r in results if r.status == 'approved'])
+                logger.info(f"   Progress: {i}/{len(validated_domains)} analyzed, {approved_count} approved")
+        
+        approved_results = [r for r in results if r.status == 'approved']
+        logger.info(f"🎯 Direct analysis complete: {len(approved_results)}/{len(results)} approved")
+        
+        return results
     
     def _get_quality_fallback_domains(self) -> List[str]:
         """High-quality fallback domains based on known publishers"""

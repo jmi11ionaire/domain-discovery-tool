@@ -43,6 +43,16 @@ analysis:
   export_borderline: true
   auto_threshold_suggestions: true
 
+# Continuous Discovery Service Settings
+continuous_discovery:
+  target_total_domains: 500           # Stop when we reach this many approved domains
+  batch_size: 20                      # Domains to process per batch
+  delay_between_batches: 30           # Seconds to wait between batches
+  max_runtime_hours: 24               # Safety limit - stop after this many hours
+  progress_report_interval: 5         # Report progress every N batches
+  auto_export_on_completion: true     # Export domains when target reached
+  save_progress_every_batch: true     # Save progress after each batch
+  
 # Environment-specific overrides (optional)
 environments:
   development:
@@ -50,9 +60,13 @@ environments:
       approval_threshold: 30  # More lenient for testing
     validation:
       timeout_seconds: 10
+    continuous_discovery:
+      delay_between_batches: 10  # Faster for testing
   
   production:
     scoring:
       approval_threshold: 35
     analysis:
       detailed_logging: false  # Reduce noise in production
+    continuous_discovery:
+      delay_between_batches: 60  # More conservative in production
