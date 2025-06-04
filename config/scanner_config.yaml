@@ -1,0 +1,58 @@
+# Optimized Domain Scanner Configuration
+# Based on comprehensive analysis findings
+
+scoring:
+  # Lowered from 40 to 35 based on analysis of 49 borderline quality domains
+  approval_threshold: 35
+  
+  # Content scoring weights
+  content_weight: 0.7
+  ads_txt_bonus: 25
+  premium_platform_bonus: 3
+  b2b_relevance_weight: 0.25
+  quality_indicator_bonus: 5
+
+validation:
+  # Network timeouts
+  timeout_seconds: 15
+  max_retries: 2
+  dns_cache_ttl: 3600
+
+discovery:
+  # Quality targets based on 92.9% validation failure analysis
+  target_validation_rate: 0.20  # 20% of discovered domains should be valid
+  fallback_threshold: 0.10      # Switch to fallback if <10% valid
+  
+  # Keywords for B2B relevance scoring
+  quality_keywords:
+    - business
+    - finance
+    - technology
+    - industry
+    - professional
+    - enterprise
+    - news
+    - media
+    - marketing
+    - investment
+
+analysis:
+  # Performance and monitoring settings
+  track_performance: true
+  detailed_logging: true
+  export_borderline: true
+  auto_threshold_suggestions: true
+
+# Environment-specific overrides (optional)
+environments:
+  development:
+    scoring:
+      approval_threshold: 30  # More lenient for testing
+    validation:
+      timeout_seconds: 10
+  
+  production:
+    scoring:
+      approval_threshold: 35
+    analysis:
+      detailed_logging: false  # Reduce noise in production

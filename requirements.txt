@@ -7,6 +7,17 @@ textblob==0.17.1
 asyncio-throttle==1.0.2
 python-dateutil==2.8.2
 
+# API-Enhanced Bulk Scanner dependencies
+PyYAML==6.0.1
+anthropic==0.7.8
+httpx==0.25.2
+
+# Analysis and visualization dependencies
+matplotlib==3.8.2
+pandas==2.1.4
+seaborn==0.13.0
+PyYAML==6.0.1
+
 # Optional dependencies for production features
 # Uncomment and install as needed:
 

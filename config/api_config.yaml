@@ -1,0 +1,51 @@
+# API Configuration for Bulk Domain Scanner
+# Set enabled: true and add your API keys when available
+
+common_crawl:
+  enabled: false
+  api_key: ""
+  base_url: "http://index.commoncrawl.org"
+  rate_limit: 10  # requests per second
+
+semrush:
+  enabled: false
+  api_key: ""
+  base_url: "https://api.semrush.com"
+  rate_limit: 1
+
+ahrefs:
+  enabled: false
+  api_key: ""
+  base_url: "https://apiv2.ahrefs.com"
+  rate_limit: 1
+
+security_trails:
+  enabled: false
+  api_key: ""
+  base_url: "https://api.securitytrails.com/v1"
+  rate_limit: 5
+
+similarweb:
+  enabled: false
+  api_key: ""
+  base_url: "https://api.similarweb.com/v1"
+  rate_limit: 2
+
+moz:
+  enabled: false
+  api_key: ""
+  base_url: "https://lsapi.seomoz.com/v2"
+  rate_limit: 1
+
+# Bulk processing configuration
+bulk_processing:
+  batch_size: 100        # Domains processed per batch
+  max_concurrent: 50     # Maximum concurrent domain analyses
+  retry_attempts: 3      # Retry failed domains
+  timeout_seconds: 30    # Timeout per domain analysis
+
+# When you get API access:
+# 1. Set enabled: true for the APIs you have access to
+# 2. Add your API keys
+# 3. Adjust rate limits based on your plan limits
+# 4. Run: python api_enhanced_bulk_scanner.py

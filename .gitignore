@@ -63,3 +63,22 @@ Thumbs.db
 # API keys and sensitive data
 config.json
 secrets.json
+
+# Test and diagnostic files
+test_*.py
+diagnose_*.py
+analyze_*.py
+
+# Database files
+*.db
+*.sqlite
+*.sqlite3
+
+# Results and output files
+*_results_*.csv
+*_test_*.csv
+*_backup_*.db
+
+# Session-specific files
+session_*.csv
+

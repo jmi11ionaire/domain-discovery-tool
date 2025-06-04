@@ -1,0 +1,912 @@
+#!/usr/bin/env python3
+"""
+Optimized Domain Scanner - Production Ready
+Fixed schema, proper rejection reasons, configurable thresholds, improved discovery
+"""
+
+import asyncio
+import aiohttp
+import sqlite3
+import re
+import json
+import logging
+import os
+import random
+import yaml
+import time
+from datetime import datetime, timedelta
+from typing import List, Dict, Tuple, Optional, Set
+from dataclasses import dataclass
+from bs4 import BeautifulSoup
+
+# Anthropic import with SSL bypass
+try:
+    import anthropic
+    import httpx
+    HAS_ANTHROPIC = True
+except ImportError:
+    HAS_ANTHROPIC = False
+
+# Import validators
+from utilities.robust_domain_validator import RobustDomainValidator
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+@dataclass
+class ScanResult:
+    """Enhanced scan result with detailed breakdown"""
+    domain: str
+    strategy: str
+    status: str
+    score: float
+    rejection_reason: str  # Specific reason, not generic
+    scoring_breakdown: Dict
+    validation_time: float
+    analysis_duration: float
+    discovery_source: str
+    config_snapshot: Dict
+    analyzed_at: Optional[datetime] = None
+    
+    def __post_init__(self):
+        if self.analyzed_at is None:
+            self.analyzed_at = datetime.now()
+
+class ConfigManager:
+    """Centralized configuration management"""
+    
+    def __init__(self, config_file: str = "config/scanner_config.yaml"):
+        self.config_file = config_file
+        self.config = self.load_config()
+    
+    def load_config(self) -> Dict:
+        """Load configuration with intelligent defaults"""
+        default_config = {
+            'scoring': {
+                'approval_threshold': 35,  # Lowered based on analysis
+                'content_weight': 0.7,
+                'ads_txt_bonus': 25,
+                'premium_platform_bonus': 3,
+                'b2b_relevance_weight': 0.25,
+                'quality_indicator_bonus': 5
+            },
+            'validation': {
+                'timeout_seconds': 15,
+                'max_retries': 2,
+                'dns_cache_ttl': 3600
+            },
+            'discovery': {
+                'target_validation_rate': 0.20,  # 20% of discovered domains should be valid
+                'fallback_threshold': 0.10,      # Switch to fallback if <10% valid
+                'quality_keywords': [
+                    'business', 'finance', 'technology', 'industry',
+                    'professional', 'enterprise', 'news', 'media'
+                ]
+            },
+            'analysis': {
+                'track_performance': True,
+                'detailed_logging': True,
+                'export_borderline': True,
+                'auto_threshold_suggestions': True
+            }
+        }
+        
+        try:
+            if os.path.exists(self.config_file):
+                with open(self.config_file, 'r') as f:
+                    loaded_config = yaml.safe_load(f) or {}
+                    # Deep merge configurations
+                    self._deep_merge(default_config, loaded_config)
+            else:
+                # Create default config file
+                self.save_config(default_config)
+                logger.info(f"Created default config: {self.config_file}")
+        except Exception as e:
+            logger.error(f"Error loading config: {e}")
+        
+        return default_config
+    
+    def _deep_merge(self, base: Dict, override: Dict):
+        """Deep merge configuration dictionaries"""
+        for key, value in override.items():
+            if key in base and isinstance(base[key], dict) and isinstance(value, dict):
+                self._deep_merge(base[key], value)
+            else:
+                base[key] = value
+    
+    def save_config(self, config: Dict):
+        """Save configuration to file"""
+        try:
+            with open(self.config_file, 'w') as f:
+                yaml.dump(config, f, default_flow_style=False, sort_keys=False)
+        except Exception as e:
+            logger.error(f"Error saving config: {e}")
+    
+    def get_threshold(self) -> float:
+        """Get current approval threshold"""
+        return self.config['scoring']['approval_threshold']
+    
+    def get_config_snapshot(self) -> Dict:
+        """Get configuration snapshot for storage"""
+        return {
+            'threshold': self.get_threshold(),
+            'content_weight': self.config['scoring']['content_weight'],
+            'ads_txt_bonus': self.config['scoring']['ads_txt_bonus'],
+            'timestamp': datetime.now().isoformat()
+        }
+
+class OptimizedDomainScanner:
+    """Production-ready domain scanner with optimized schema and tracking"""
+    
+    def __init__(self, db_path: str = "optimized_domain_discovery.db"):
+        self.db_path = db_path
+        self.session = None
+        self.config = ConfigManager()
+        self.validator = RobustDomainValidator()
+        
+        # Setup optimized database
+        self.setup_optimized_database()
+        
+        # Load existing domains
+        self.existing_domains = self.load_existing_domains()
+        
+        # Setup LLM client
+        self._setup_llm_client()
+        
+        # Premium platforms for ads.txt analysis
+        self.premium_platforms = {
+            'google.com', 'googlesyndication.com', 'doubleclick.net',
+            'amazon-adsystem.com', 'rubiconproject.com', 'openx.com',
+            'pubmatic.com', 'appnexus.com', 'criteo.com', 'medianet.com',
+            'sovrn.com', 'indexexchange.com', 'sharethrough.com', 'triplelift.com',
+            'adsystem.amazon.com', 'adsync.amazon.com'
+        }
+        
+        # Performance tracking
+        self.session_stats = {
+            'discovered': 0,
+            'validated': 0,
+            'approved': 0,
+            'validation_failures': 0,
+            'start_time': time.time()
+        }
+    
+    def setup_optimized_database(self):
+        """Setup optimized database schema for production"""
+        conn = sqlite3.connect(self.db_path)
+        cursor = conn.cursor()
+        
+        # Main domains table with proper rejection tracking
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS domains_analyzed (
+                domain TEXT PRIMARY KEY,
+                first_analyzed_at TIMESTAMP,
+                last_analyzed_at TIMESTAMP,
+                analysis_count INTEGER DEFAULT 1,
+                current_status TEXT,
+                current_score REAL,
+                strategy_used TEXT,
+                rejection_reason TEXT,
+                discovery_source TEXT,
+                
+                -- Validation tracking
+                validation_successful BOOLEAN DEFAULT FALSE,
+                validation_time_seconds REAL DEFAULT 0,
+                analysis_duration_seconds REAL DEFAULT 0,
+                
+                -- Detailed scoring breakdown
+                content_score REAL DEFAULT 0,
+                has_meaningful_content BOOLEAN DEFAULT FALSE,
+                ad_slots_detected INTEGER DEFAULT 0,
+                quality_indicators INTEGER DEFAULT 0,
+                b2b_relevance_score REAL DEFAULT 0,
+                
+                -- Ads.txt analysis
+                has_ads_txt BOOLEAN DEFAULT FALSE,
+                ads_txt_entries_count INTEGER DEFAULT 0,
+                premium_platforms_count INTEGER DEFAULT 0,
+                direct_deals_count INTEGER DEFAULT 0,
+                
+                -- Configuration snapshot
+                threshold_used REAL DEFAULT 0,
+                config_snapshot TEXT DEFAULT '{}',
+                
+                -- Additional metadata
+                final_score_breakdown TEXT DEFAULT '{}'
+            )
+        ''')
+        
+        # Analysis sessions tracking
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS analysis_sessions (
+                session_id TEXT PRIMARY KEY,
+                started_at TIMESTAMP,
+                completed_at TIMESTAMP,
+                strategy TEXT,
+                discovery_source TEXT,
+                target_count INTEGER,
+                
+                -- Results
+                domains_discovered INTEGER DEFAULT 0,
+                domains_validated INTEGER DEFAULT 0,
+                domains_approved INTEGER DEFAULT 0,
+                validation_rate REAL DEFAULT 0,
+                approval_rate REAL DEFAULT 0,
+                
+                -- Performance
+                avg_validation_time REAL DEFAULT 0,
+                avg_analysis_time REAL DEFAULT 0,
+                
+                -- Configuration used
+                threshold_used REAL DEFAULT 0,
+                config_snapshot TEXT DEFAULT '{}'
+            )
+        ''')
+        
+        # Performance monitoring
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS performance_metrics (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                recorded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                metric_name TEXT,
+                metric_value REAL,
+                session_id TEXT,
+                additional_data TEXT DEFAULT '{}'
+            )
+        ''')
+        
+        # Discovery quality tracking
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS discovery_quality (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                discovery_source TEXT,
+                domains_attempted INTEGER,
+                domains_reachable INTEGER,
+                reachability_rate REAL,
+                recorded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                quality_score REAL DEFAULT 0
+            )
+        ''')
+        
+        conn.commit()
+        conn.close()
+        logger.info("✅ Optimized database schema initialized")
+    
+    def _setup_llm_client(self):
+        """Setup LLM client for domain discovery"""
+        self.llm_client = None
+        
+        if not HAS_ANTHROPIC:
+            logger.warning("Anthropic not available")
+            return
+            
+        api_key = os.getenv("ANTHROPIC_API_KEY")
+        if not api_key:
+            logger.warning("ANTHROPIC_API_KEY not set")
+            return
+        
+        try:
+            httpx_client = httpx.Client(verify=False, timeout=60.0)
+            self.llm_client = anthropic.Anthropic(
+                api_key=api_key,
+                http_client=httpx_client,
+                timeout=60.0
+            )
+            logger.info("✅ LLM client initialized")
+        except Exception as e:
+            logger.error(f"Failed to setup LLM client: {e}")
+    
+    def load_existing_domains(self) -> Set[str]:
+        """Load existing domains"""
+        existing = set()
+        try:
+            with open('existing_domains.txt', 'r') as f:
+                for line in f:
+                    domain = line.strip().replace('www.', '')
+                    if domain:
+                        existing.add(domain)
+            logger.info(f"Loaded {len(existing)} existing domains")
+        except FileNotFoundError:
+            logger.warning("existing_domains.txt not found")
+        return existing
+    
+    async def get_session(self):
+        """Get aiohttp session"""
+        if self.session is None:
+            timeout = aiohttp.ClientTimeout(total=self.config.config['validation']['timeout_seconds'])
+            self.session = aiohttp.ClientSession(
+                timeout=timeout,
+                headers={'User-Agent': 'Mozilla/5.0 (compatible; OptimizedDomainScanner/2.0)'}
+            )
+        return self.session
+    
+    async def close_session(self):
+        """Close sessions"""
+        if self.session:
+            await self.session.close()
+            self.session = None
+        await self.validator.close_session()
+    
+    async def improved_domain_discovery(self, count: int = 50) -> List[str]:
+        """Improved domain discovery with quality focus"""
+        logger.info(f"🧠 Discovering {count} high-quality domains...")
+        
+        discovered_domains = []
+        
+        if self.llm_client:
+            try:
+                # Improved prompt based on analysis findings
+                prompt = f"""As an expert in B2B digital advertising, discover {count} high-quality publisher domains that:
+
+1. Are REAL, existing websites (not made-up domains)
+2. Have active content and likely accept programmatic advertising
+3. Focus on business, technology, finance, or professional audiences
+4. Are likely to have ads.txt files or ad inventory
+5. Include established publishers, trade publications, and business media
+
+Quality indicators to prioritize:
+- Established media companies (like Forbes, TechCrunch tier)
+- Industry trade publications
+- Regional business journals  
+- B2B SaaS/technology sites
+- Professional service websites
+- Financial/investment content sites
+
+Return ONLY the domain names (like "example.com"), one per line.
+Focus on domains that actually exist and are reachable.
+Avoid: Social media, marketplaces, forums, personal blogs."""
+
+                response = self.llm_client.messages.create(
+                    model="claude-3-haiku-20240307",
+                    max_tokens=1200,
+                    messages=[{"role": "user", "content": prompt}]
+                )
+                
+                analysis = getattr(response.content[0], 'text', '') if response.content else ""
+                
+                # Parse domains with better validation
+                for line in analysis.strip().split('\n'):
+                    line = line.strip()
+                    if line and not line.startswith('#') and '.' in line:
+                        # Clean domain
+                        domain = re.sub(r'^[^a-zA-Z0-9]*', '', line)
+                        domain = re.sub(r'[^a-zA-Z0-9\.-]*$', '', domain)
+                        domain = domain.replace('www.', '').replace('http://', '').replace('https://', '')
+                        
+                        # Validate format
+                        if (re.match(r'^[a-zA-Z0-9][a-zA-Z0-9\.-]*[a-zA-Z0-9]\.[a-zA-Z]{2,}$', domain) 
+                            and len(domain) > 4 and len(domain) < 50):
+                            discovered_domains.append(domain.lower())
+                
+                logger.info(f"✅ LLM discovered {len(discovered_domains)} candidate domains")
+                
+            except Exception as e:
+                logger.warning(f"LLM discovery failed: {e}")
+        
+        # Fallback to curated list if LLM fails or insufficient results
+        if len(discovered_domains) < count // 2:
+            logger.info("🔄 Using fallback discovery...")
+            fallback_domains = self._get_quality_fallback_domains()
+            discovered_domains.extend(fallback_domains)
+        
+        # Remove duplicates and existing domains
+        unique_domains = []
+        seen = set()
+        for domain in discovered_domains:
+            if domain not in seen and domain not in self.existing_domains:
+                unique_domains.append(domain)
+                seen.add(domain)
+        
+        # Track discovery quality
+        self._track_discovery_quality(len(unique_domains), 'llm_improved')
+        
+        return unique_domains[:count]
+    
+    def _get_quality_fallback_domains(self) -> List[str]:
+        """High-quality fallback domains based on known publishers"""
+        quality_domains = [
+            # Business/Finance - Tier 1
+            'marketwatch.com', 'bloomberg.com', 'reuters.com', 'wsj.com',
+            'financialtimes.com', 'businessinsider.com', 'cnbc.com',
+            
+            # Technology - Tier 1  
+            'techcrunch.com', 'venturebeat.com', 'ars-technica.com',
+            'zdnet.com', 'computerworld.com', 'infoworld.com',
+            
+            # Industry Trade
+            'adweek.com', 'mediapost.com', 'digiday.com', 'marketingland.com',
+            'industrydive.com', 'supplychainbrain.com', 'manufacturingtalk.com',
+            
+            # Regional Business
+            'bizjournals.com', 'crainsnewyork.com', 'chicagobusiness.com',
+            'djournal.com', 'tampabay.com', 'denverbusiness.com',
+            
+            # B2B/Enterprise
+            'firstround.com', 'techstars.com', 'crunchbase.com',
+            'salesforce.com', 'hubspot.com', 'zendesk.com'
+        ]
+        
+        # Filter out existing and randomize
+        available = [d for d in quality_domains if d not in self.existing_domains]
+        random.shuffle(available)
+        return available
+    
+    def _track_discovery_quality(self, domains_found: int, source: str):
+        """Track discovery source quality"""
+        conn = sqlite3.connect(self.db_path)
+        cursor = conn.cursor()
+        
+        cursor.execute('''
+            INSERT INTO discovery_quality 
+            (discovery_source, domains_attempted, domains_reachable, recorded_at)
+            VALUES (?, ?, 0, ?)
+        ''', (source, domains_found, datetime.now()))
+        
+        conn.commit()
+        conn.close()
+    
+    async def enhanced_validate_domains(self, domains: List[str]) -> List[str]:
+        """Enhanced validation with performance tracking"""
+        logger.info(f"⚡ Validating {len(domains)} domains...")
+        
+        start_time = time.time()
+        validated_domains = await self.validator.batch_validate(domains, max_concurrent=15)
+        validation_duration = time.time() - start_time
+        
+        # Update session stats
+        self.session_stats['discovered'] += len(domains)
+        self.session_stats['validated'] += len(validated_domains)
+        self.session_stats['validation_failures'] += len(domains) - len(validated_domains)
+        
+        # Track validation rate
+        validation_rate = len(validated_domains) / len(domains) if domains else 0
+        logger.info(f"📊 Validation: {len(validated_domains)}/{len(domains)} ({validation_rate:.1%}) in {validation_duration:.1f}s")
+        
+        # Store performance metrics
+        self._store_performance_metric('validation_rate', validation_rate)
+        self._store_performance_metric('avg_validation_time', validation_duration / len(domains) if domains else 0)
+        
+        return validated_domains
+    
+    def _store_performance_metric(self, metric_name: str, value: float):
+        """Store performance metric for monitoring"""
+        if not self.config.config['analysis']['track_performance']:
+            return
+        
+        try:
+            conn = sqlite3.connect(self.db_path)
+            cursor = conn.cursor()
+            
+            cursor.execute('''
+                INSERT INTO performance_metrics (metric_name, metric_value, recorded_at)
+                VALUES (?, ?, ?)
+            ''', (metric_name, value, datetime.now()))
+            
+            conn.commit()
+            conn.close()
+        except Exception as e:
+            logger.debug(f"Failed to store metric {metric_name}: {e}")
+    
+    async def check_ads_txt(self, domain: str) -> Tuple[bool, Dict]:
+        """Enhanced ads.txt analysis"""
+        session = await self.get_session()
+        
+        try:
+            async with session.get(f"https://{domain}/ads.txt") as response:
+                if response.status == 200:
+                    content = await response.text()
+                    return True, self._parse_ads_txt(content)
+                return False, {}
+        except Exception:
+            return False, {}
+    
+    def _parse_ads_txt(self, content: str) -> Dict:
+        """Enhanced ads.txt parsing"""
+        lines = content.strip().split('\n')
+        analysis = {
+            'total_entries': 0,
+            'direct_deals': 0,
+            'reseller_deals': 0,
+            'premium_platforms': [],
+            'quality_score': 0
+        }
+        
+        for line in lines:
+            line = line.strip()
+            if line and not line.startswith('#'):
+                parts = line.split(',')
+                if len(parts) >= 3:
+                    platform = parts[0].strip().lower()
+                    relationship = parts[2].strip().upper()
+                    
+                    analysis['total_entries'] += 1
+                    
+                    if relationship == 'DIRECT':
+                        analysis['direct_deals'] += 1
+                    elif relationship == 'RESELLER':
+                        analysis['reseller_deals'] += 1
+                    
+                    # Check for premium platforms
+                    for premium in self.premium_platforms:
+                        if premium in platform:
+                            analysis['premium_platforms'].append(premium)
+                            break
+        
+        # Calculate quality score
+        analysis['quality_score'] = min(100, 
+            (analysis['direct_deals'] * 10) + 
+            (len(analysis['premium_platforms']) * 15) +
+            (analysis['total_entries'] * 2)
+        )
+        
+        return analysis
+    
+    async def analyze_content(self, domain: str) -> Tuple[float, Dict]:
+        """Enhanced content analysis with better scoring"""
+        session = await self.get_session()
+        content_details = {
+            'has_meaningful_content': False,
+            'ad_slots_detected': 0,
+            'quality_indicators': 0,
+            'b2b_relevance_score': 0,
+            'content_length': 0,
+            'professional_indicators': 0
+        }
+        
+        try:
+            async with session.get(f"https://{domain}", allow_redirects=True) as response:
+                if response.status == 200:
+                    html_content = await response.text()
+                    soup = BeautifulSoup(html_content, 'html.parser')
+                    
+                    # Clean text extraction
+                    for script in soup(["script", "style", "nav", "footer", "header"]):
+                        script.decompose()
+                    
+                    text_content = soup.get_text().lower()
+                    content_details['content_length'] = len(text_content)
+                    content_details['has_meaningful_content'] = len(text_content) > 1000
+                    
+                    # Enhanced ad slot detection
+                    ad_selectors = [
+                        {'class_': re.compile(r'ad|banner|advertisement|sponsor|adsense')},
+                        {'id': re.compile(r'ad|banner|advertisement|sponsor')},
+                        'iframe[src*="googlesyndication"]',
+                        'script[src*="googlesyndication"]',
+                        'script[src*="amazon-adsystem"]'
+                    ]
+                    
+                    ad_count = 0
+                    for selector in ad_selectors:
+                        if isinstance(selector, dict):
+                            ad_count += len(soup.find_all('div', **selector))
+                        else:
+                            ad_count += len(soup.select(selector))
+                    
+                    content_details['ad_slots_detected'] = min(10, ad_count)
+                    
+                    # Enhanced quality indicators
+                    quality_terms = [
+                        'subscribe', 'newsletter', 'premium', 'insights', 'analysis',
+                        'whitepaper', 'report', 'research', 'industry', 'professional'
+                    ]
+                    
+                    quality_count = sum(1 for term in quality_terms if term in text_content)
+                    content_details['quality_indicators'] = min(10, quality_count)
+                    
+                    # Enhanced B2B relevance scoring
+                    b2b_keywords = self.config.config['discovery']['quality_keywords']
+                    b2b_count = sum(text_content.count(keyword) for keyword in b2b_keywords)
+                    content_details['b2b_relevance_score'] = min(100, (b2b_count / len(b2b_keywords)) * 20)
+                    
+                    # Professional indicators
+                    professional_terms = ['enterprise', 'solution', 'platform', 'service', 'technology']
+                    professional_count = sum(1 for term in professional_terms if term in text_content)
+                    content_details['professional_indicators'] = min(5, professional_count)
+                    
+        except Exception as e:
+            logger.debug(f"Content analysis failed for {domain}: {e}")
+        
+        # Enhanced scoring algorithm
+        score = self._calculate_content_score(content_details)
+        return score, content_details
+    
+    def _calculate_content_score(self, content_details: Dict) -> float:
+        """Calculate content score using configuration"""
+        config = self.config.config['scoring']
+        
+        score = 0
+        
+        # Base content score
+        if content_details['has_meaningful_content']:
+            score += 30
+        
+        # Ad slots (indicates monetization)
+        score += min(20, content_details['ad_slots_detected'] * 3)
+        
+        # Quality indicators
+        score += content_details['quality_indicators'] * config['quality_indicator_bonus']
+        
+        # B2B relevance
+        score += content_details['b2b_relevance_score'] * config['b2b_relevance_weight']
+        
+        # Professional indicators
+        score += content_details['professional_indicators'] * 3
+        
+        return min(100, score)
+    
+    async def enhanced_scan_domain(self, domain: str, strategy: str = 'flexible', 
+                                 discovery_source: str = 'llm_improved') -> Optional[ScanResult]:
+        """Enhanced domain scanning with proper rejection tracking"""
+        
+        # Skip existing domains
+        if domain in self.existing_domains:
+            logger.debug(f"⏩ Skipping {domain} - already exists")
+            return None
+        
+        analysis_start = time.time()
+        
+        # Validation phase
+        validation_start = time.time()
+        if not await self.validator.quick_validate(domain):
+            validation_time = time.time() - validation_start
+            
+            return ScanResult(
+                domain=domain,
+                strategy=strategy,
+                status='rejected',
+                score=0,
+                rejection_reason='domain_not_reachable',  # Specific reason
+                scoring_breakdown={},
+                validation_time=validation_time,
+                analysis_duration=time.time() - analysis_start,
+                discovery_source=discovery_source,
+                config_snapshot=self.config.get_config_snapshot()
+            )
+        
+        validation_time = time.time() - validation_start
+        
+        try:
+            # Content analysis
+            content_score, content_details = await self.analyze_content(domain)
+            
+            # Ads.txt analysis
+            has_ads_txt, ads_analysis = await self.check_ads_txt(domain)
+            
+            # Calculate final score
+            scoring_breakdown = {
+                'content_score': content_score,
+                'ads_txt_bonus': self.config.config['scoring']['ads_txt_bonus'] if has_ads_txt else 0,
+                'premium_platform_bonus': len(ads_analysis.get('premium_platforms', [])) * self.config.config['scoring']['premium_platform_bonus'],
+                'total_before_threshold': 0
+            }
+            
+            # Weighted final score
+            final_score = (content_score * self.config.config['scoring']['content_weight'] + 
+                          scoring_breakdown['ads_txt_bonus'] + 
+                          scoring_breakdown['premium_platform_bonus'])
+            
+            scoring_breakdown['total_before_threshold'] = final_score
+            
+            # Determine status and specific rejection reason
+            threshold = self.config.get_threshold()
+            
+            if final_score >= threshold:
+                status = 'approved'
+                rejection_reason = 'approved'
+            else:
+                status = 'rejected'
+                
+                # Specific rejection reasons
+                if content_score < 20:
+                    rejection_reason = 'insufficient_content'
+                elif content_score < 40 and not has_ads_txt:
+                    rejection_reason = 'low_content_no_ads_txt'
+                elif final_score < threshold - 10:
+                    rejection_reason = 'significantly_below_threshold'
+                else:
+                    rejection_reason = 'below_threshold'
+            
+            result = ScanResult(
+                domain=domain,
+                strategy=strategy,
+                status=status,
+                score=final_score,
+                rejection_reason=rejection_reason,
+                scoring_breakdown=scoring_breakdown,
+                validation_time=validation_time,
+                analysis_duration=time.time() - analysis_start,
+                discovery_source=discovery_source,
+                config_snapshot=self.config.get_config_snapshot()
+            )
+            
+            # Save to database
+            self._save_enhanced_result(result, content_details, ads_analysis)
+            
+            # Log result
+            if status == 'approved':
+                logger.info(f"✅ APPROVED: {domain} (Score: {final_score:.1f})")
+                self.session_stats['approved'] += 1
+            else:
+                logger.info(f"❌ REJECTED: {domain} (Score: {final_score:.1f}, Reason: {rejection_reason})")
+            
+            return result
+            
+        except Exception as e:
+            logger.error(f"Enhanced scan failed for {domain}: {e}")
+            return ScanResult(
+                domain=domain,
+                strategy=strategy,
+                status='rejected',
+                score=0,
+                rejection_reason='analysis_error',
+                scoring_breakdown={},
+                validation_time=validation_time,
+                analysis_duration=time.time() - analysis_start,
+                discovery_source=discovery_source,
+                config_snapshot=self.config.get_config_snapshot()
+            )
+    
+    def _save_enhanced_result(self, result: ScanResult, content_details: Dict, ads_analysis: Dict):
+        """Save enhanced result to optimized database"""
+        conn = sqlite3.connect(self.db_path)
+        cursor = conn.cursor()
+        
+        cursor.execute('''
+            INSERT OR REPLACE INTO domains_analyzed (
+                domain, first_analyzed_at, last_analyzed_at, analysis_count,
+                current_status, current_score, strategy_used, rejection_reason, discovery_source,
+                validation_successful, validation_time_seconds, analysis_duration_seconds,
+                content_score, has_meaningful_content, ad_slots_detected, quality_indicators, b2b_relevance_score,
+                has_ads_txt, ads_txt_entries_count, premium_platforms_count, direct_deals_count,
+                threshold_used, config_snapshot, final_score_breakdown
+            ) VALUES (
+                ?, 
+                COALESCE((SELECT first_analyzed_at FROM domains_analyzed WHERE domain = ?), ?),
+                ?, 
+                COALESCE((SELECT analysis_count FROM domains_analyzed WHERE domain = ?) + 1, 1),
+                ?, ?, ?, ?, ?,
+                ?, ?, ?,
+                ?, ?, ?, ?, ?,
+                ?, ?, ?, ?,
+                ?, ?, ?
+            )
+        ''', (
+            result.domain, result.domain, result.analyzed_at, result.analyzed_at,
+            result.domain, result.status, result.score, result.strategy, result.rejection_reason, result.discovery_source,
+            result.status != 'rejected' or result.rejection_reason != 'domain_not_reachable',
+            result.validation_time, result.analysis_duration,
+            result.scoring_breakdown.get('content_score', 0),
+            content_details.get('has_meaningful_content', False),
+            content_details.get('ad_slots_detected', 0),
+            content_details.get('quality_indicators', 0),
+            content_details.get('b2b_relevance_score', 0),
+            ads_analysis.get('total_entries', 0) > 0,
+            ads_analysis.get('total_entries', 0),
+            len(ads_analysis.get('premium_platforms', [])),
+            ads_analysis.get('direct_deals', 0),
+            self.config.get_threshold(),
+            json.dumps(result.config_snapshot),
+            json.dumps(result.scoring_breakdown)
+        ))
+        
+        conn.commit()
+        conn.close()
+    
+    async def run_optimized_discovery_pipeline(self, target_count: int = 30) -> Dict:
+        """Run optimized discovery pipeline"""
+        session_id = f"session_{int(time.time())}"
+        
+        print("🚀 OPTIMIZED DOMAIN DISCOVERY PIPELINE")
+        print("=" * 50)
+        print(f"Target: {target_count} domains")
+        print(f"Threshold: {self.config.get_threshold()}")
+        print(f"Session ID: {session_id}")
+        print()
+        
+        # Store session start
+        self._start_session(session_id, target_count)
+        
+        try:
+            # Step 1: Improved domain discovery
+            discovered_domains = await self.improved_domain_discovery(target_count * 2)
+            print(f"🧠 Discovered: {len(discovered_domains)} candidate domains")
+            
+            # Step 2: Enhanced validation
+            validated_domains = await self.enhanced_validate_domains(discovered_domains)
+            print(f"⚡ Validated: {len(validated_domains)} reachable domains")
+            
+            # Step 3: Enhanced analysis
+            approved_results = []
+            for i, domain in enumerate(validated_domains[:target_count], 1):
+                result = await self.enhanced_scan_domain(domain)
+                if result and result.status == 'approved':
+                    approved_results.append(result)
+                
+                if i % 5 == 0:
+                    print(f"   Progress: {i}/{min(len(validated_domains), target_count)} analyzed, {len(approved_results)} approved")
+            
+            # Update session completion
+            self._complete_session(session_id, discovered_domains, validated_domains, approved_results)
+            
+            # Final stats
+            runtime = time.time() - self.session_stats['start_time']
+            
+            print(f"\n📈 OPTIMIZED PIPELINE COMPLETE")
+            print(f"   Discovery rate: {len(validated_domains)/len(discovered_domains)*100:.1f}%")
+            print(f"   Approval rate: {len(approved_results)/len(validated_domains)*100:.1f}% (of validated)")
+            print(f"   Processing rate: {len(validated_domains)/(runtime/60):.1f} domains/minute")
+            print(f"   New approvals: {len(approved_results)}")
+            
+            return {
+                'session_id': session_id,
+                'discovered': len(discovered_domains),
+                'validated': len(validated_domains),
+                'approved': len(approved_results),
+                'discovery_rate': len(validated_domains)/len(discovered_domains)*100 if discovered_domains else 0,
+                'approval_rate': len(approved_results)/len(validated_domains)*100 if validated_domains else 0,
+                'runtime_minutes': runtime/60
+            }
+            
+        finally:
+            await self.close_session()
+    
+    def _start_session(self, session_id: str, target_count: int):
+        """Record session start"""
+        conn = sqlite3.connect(self.db_path)
+        cursor = conn.cursor()
+        
+        cursor.execute('''
+            INSERT INTO analysis_sessions 
+            (session_id, started_at, strategy, discovery_source, target_count, threshold_used, config_snapshot)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+        ''', (
+            session_id, datetime.now(), 'flexible', 'llm_improved', target_count,
+            self.config.get_threshold(), json.dumps(self.config.get_config_snapshot())
+        ))
+        
+        conn.commit()
+        conn.close()
+    
+    def _complete_session(self, session_id: str, discovered: List[str], validated: List[str], approved: List):
+        """Record session completion"""
+        conn = sqlite3.connect(self.db_path)
+        cursor = conn.cursor()
+        
+        validation_rate = len(validated) / len(discovered) if discovered else 0
+        approval_rate = len(approved) / len(validated) if validated else 0
+        
+        cursor.execute('''
+            UPDATE analysis_sessions SET
+                completed_at = ?,
+                domains_discovered = ?,
+                domains_validated = ?,
+                domains_approved = ?,
+                validation_rate = ?,
+                approval_rate = ?
+            WHERE session_id = ?
+        ''', (
+            datetime.now(), len(discovered), len(validated), len(approved),
+            validation_rate, approval_rate, session_id
+        ))
+        
+        conn.commit()
+        conn.close()
+
+# Pipeline runner function
+async def run_optimized_discovery_pipeline(target_count: int = 30) -> Dict:
+    """Run the optimized discovery pipeline"""
+    scanner = OptimizedDomainScanner()
+    return await scanner.run_optimized_discovery_pipeline(target_count)
+
+async def main():
+    """Test the optimized system"""
+    result = await run_optimized_discovery_pipeline(target_count=20)
+    print(f"\n🎉 Optimized pipeline result: {result}")
+
+if __name__ == "__main__":
+    print("🚀 Optimized Domain Scanner - Production Ready")
+    print("Features: Proper rejection tracking, configurable thresholds, improved discovery")
+    print()
+    
+    asyncio.run(main())
