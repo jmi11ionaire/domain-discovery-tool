@@ -784,7 +784,7 @@ Think second-tier quality sites that programmatics teams would want but aren't o
         return analysis
     
     async def analyze_content(self, domain: str) -> Tuple[float, Dict]:
-        """Enhanced content analysis with complete error suppression"""
+        """Enhanced content analysis with IAB category detection and risk assessment"""
         session = await self.get_session()
         content_details = {
             'has_meaningful_content': False,
@@ -792,7 +792,11 @@ Think second-tier quality sites that programmatics teams would want but aren't o
             'quality_indicators': 0,
             'b2b_relevance_score': 0,
             'content_length': 0,
-            'professional_indicators': 0
+            'professional_indicators': 0,
+            'iab_category': None,
+            'iab_category_confidence': 0,
+            'risk_content_detected': False,
+            'risk_keywords_found': []
         }
         
         # Create task with error suppression
@@ -848,6 +852,16 @@ Think second-tier quality sites that programmatics teams would want but aren't o
                         professional_count = sum(1 for term in professional_terms if term in text_content)
                         content_details['professional_indicators'] = min(5, professional_count)
                         
+                        # IAB CATEGORY DETECTION
+                        iab_result = self._detect_iab_category(text_content, html_content)
+                        content_details['iab_category'] = iab_result['category']
+                        content_details['iab_category_confidence'] = iab_result['confidence']
+                        
+                        # RISK CONTENT DETECTION
+                        risk_result = self._detect_risk_content(text_content)
+                        content_details['risk_content_detected'] = risk_result['detected']
+                        content_details['risk_keywords_found'] = risk_result['keywords']
+                        
             except Exception:
                 pass  # Silently ignore all content analysis errors
         
@@ -863,9 +877,78 @@ Think second-tier quality sites that programmatics teams would want but aren't o
         score = self._calculate_content_score(content_details)
         return score, content_details
     
+    def _detect_iab_category(self, text_content: str, html_content: str) -> Dict:
+        """IAB category detection using content analysis"""
+        iab_config = self.config.config.get('iab_categories', {})
+        target_categories = iab_config.get('target_categories', [])
+        
+        # IAB category mapping patterns
+        category_patterns = {
+            'IAB19': ['business', 'entrepreneur', 'startup', 'company', 'corporate', 'enterprise'],
+            'IAB19-1': ['advertising', 'marketing', 'campaign', 'brand', 'promotion'],
+            'IAB19-3': ['career', 'job', 'employment', 'hiring', 'recruitment', 'resume'],
+            'IAB19-8': ['marketing', 'digital marketing', 'content marketing', 'seo', 'sem'],
+            'IAB3': ['technology', 'tech', 'software', 'digital', 'innovation'],
+            'IAB3-9': ['enterprise technology', 'saas', 'cloud', 'platform', 'solution'],
+            'IAB3-13': ['programming', 'development', 'coding', 'developer', 'software engineer'],
+            'IAB13': ['finance', 'financial', 'investment', 'banking', 'money'],
+            'IAB15': ['news', 'breaking', 'report', 'journalist', 'media'],
+            'IAB11': ['science', 'research', 'study', 'scientific', 'laboratory'],
+            'IAB5': ['education', 'learning', 'training', 'course', 'university']
+        }
+        
+        best_category = None
+        best_confidence = 0
+        
+        for category, keywords in category_patterns.items():
+            if category in target_categories:
+                matches = sum(1 for keyword in keywords if keyword in text_content)
+                confidence = min(100, (matches / len(keywords)) * 100)
+                
+                if confidence > best_confidence:
+                    best_category = category
+                    best_confidence = confidence
+        
+        return {
+            'category': best_category,
+            'confidence': best_confidence
+        }
+    
+    def _detect_risk_content(self, text_content: str) -> Dict:
+        """Risk content detection for brand safety"""
+        iab_config = self.config.config.get('iab_categories', {})
+        risky_categories = iab_config.get('risky_categories', [])
+        
+        # Risk keyword patterns
+        risk_patterns = {
+            'cannabis': ['cannabis', 'marijuana', 'weed', 'cbd', 'thc', 'hemp', 'dispensary'],
+            'adult': ['adult', 'porn', 'xxx', 'sex', 'escort', 'nude'],
+            'gambling': ['casino', 'poker', 'betting', 'gambling', 'lottery', 'jackpot'],
+            'politics': ['political', 'election', 'vote', 'democrat', 'republican', 'partisan'],
+            'controversial': ['controversial', 'scandal', 'protest', 'violence', 'hate'],
+            'weapons': ['gun', 'weapon', 'firearm', 'rifle', 'ammunition']
+        }
+        
+        detected_risks = []
+        risk_keywords_found = []
+        
+        for risk_type, keywords in risk_patterns.items():
+            if risk_type in risky_categories:
+                found_keywords = [kw for kw in keywords if kw in text_content]
+                if found_keywords:
+                    detected_risks.append(risk_type)
+                    risk_keywords_found.extend(found_keywords)
+        
+        return {
+            'detected': len(detected_risks) > 0,
+            'categories': detected_risks,
+            'keywords': risk_keywords_found
+        }
+    
     def _calculate_content_score(self, content_details: Dict) -> float:
-        """Calculate content score using configuration"""
+        """Enhanced content score calculation with IAB categories and risk assessment"""
         config = self.config.config['scoring']
+        iab_config = self.config.config.get('iab_categories', {})
         
         score = 0
         
@@ -884,6 +967,38 @@ Think second-tier quality sites that programmatics teams would want but aren't o
         
         # Professional indicators
         score += content_details['professional_indicators'] * 3
+        
+        # IAB CATEGORY BONUSES
+        iab_category = content_details.get('iab_category')
+        iab_confidence = content_details.get('iab_category_confidence', 0)
+        
+        if iab_category and iab_confidence > 20:  # Minimum confidence threshold
+            scoring_config = iab_config.get('scoring', {})
+            
+            # Perfect match categories (IAB19, IAB3, IAB13)
+            if iab_category in ['IAB19', 'IAB3', 'IAB13'] or iab_category.startswith(('IAB19-', 'IAB3-')):
+                bonus = scoring_config.get('perfect_match_bonus', 30)
+                score += bonus * (iab_confidence / 100)
+                logger.info(f"🎯 IAB Perfect Match: {iab_category} (+{bonus * (iab_confidence / 100):.1f})")
+            
+            # Good match categories
+            elif iab_category in ['IAB15', 'IAB11', 'IAB5']:
+                bonus = scoring_config.get('good_match_bonus', 20)
+                score += bonus * (iab_confidence / 100)
+                logger.info(f"✅ IAB Good Match: {iab_category} (+{bonus * (iab_confidence / 100):.1f})")
+            
+            # Moderate match categories
+            elif iab_category in ['IAB20', 'IAB1']:
+                bonus = scoring_config.get('moderate_match_bonus', 10)
+                score += bonus * (iab_confidence / 100)
+                logger.info(f"🟡 IAB Moderate Match: {iab_category} (+{bonus * (iab_confidence / 100):.1f})")
+        
+        # RISK CONTENT PENALTIES
+        if content_details.get('risk_content_detected', False):
+            penalty = iab_config.get('scoring', {}).get('risk_content_penalty', -50)
+            score += penalty
+            risk_keywords = content_details.get('risk_keywords_found', [])
+            logger.warning(f"🚨 RISK CONTENT DETECTED: {risk_keywords} ({penalty} penalty)")
         
         return min(100, score)
     
@@ -943,17 +1058,33 @@ Think second-tier quality sites that programmatics teams would want but aren't o
             scoring_breakdown['total_before_threshold'] = raw_final_score
             scoring_breakdown['final_capped_score'] = final_score
             
-            # Determine status and specific rejection reason
+            # IAB CATEGORY & RISK-BASED REJECTION LOGIC
             threshold = self.config.get_threshold()
             
-            if final_score >= threshold:
+            # Check for RISK CONTENT first (immediate rejection)
+            if content_details.get('risk_content_detected', False):
+                status = 'rejected'
+                risk_keywords = content_details.get('risk_keywords_found', [])
+                rejection_reason = f'risk_content_detected_{risk_keywords[0] if risk_keywords else "unknown"}'
+                logger.warning(f"🚨 RISK REJECTION: {domain} - {risk_keywords}")
+            
+            elif final_score >= threshold:
                 status = 'approved'
                 rejection_reason = 'approved'
+                
+                # Log IAB category info for approved domains
+                iab_category = content_details.get('iab_category')
+                if iab_category:
+                    logger.info(f"🎯 APPROVED with IAB: {domain} - {iab_category}")
+            
             else:
                 status = 'rejected'
                 
-                # Specific rejection reasons
-                if content_score < 20:
+                # Enhanced rejection reasons with IAB context
+                iab_category = content_details.get('iab_category')
+                if not iab_category:
+                    rejection_reason = 'no_iab_category_match'
+                elif content_score < 20:
                     rejection_reason = 'insufficient_content'
                 elif content_score < 40 and not has_ads_txt:
                     rejection_reason = 'low_content_no_ads_txt'

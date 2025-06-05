@@ -61,6 +61,51 @@ turbo_mode:
   validation_timeout: 5              # 3x faster validation timeout
   parallel_pipelines: 4             # Multiple discovery streams
   high_throughput_scoring: true     # Optimized scoring for speed
+
+# IAB CATEGORY QUALITY SYSTEM
+iab_categories:
+  # Target B2B IAB Categories (HIGH VALUE)
+  target_categories:
+    - "IAB19"          # Business (general)
+    - "IAB19-1"        # Advertising 
+    - "IAB19-3"        # Careers
+    - "IAB19-4"        # College
+    - "IAB19-5"        # Government
+    - "IAB19-6"        # Green Solutions
+    - "IAB19-8"        # Marketing
+    - "IAB19-9"        # Real Estate
+    - "IAB3"           # Technology
+    - "IAB3-7"         # Computer Hardware
+    - "IAB3-9"         # Enterprise Technology
+    - "IAB3-13"        # Programming & Dev
+    - "IAB13"          # Business Finance/Investing
+    - "IAB7-30"        # Science/Tech News
+    - "IAB15"          # News (filtered for business/tech)
+    - "IAB11"          # Science
+    - "IAB5"           # Education (professional only)
+    - "IAB17"          # Technology & Computing
+    - "IAB20"          # Society (filtered)
+
+  # Content risk categories (FILTER OUT)
+  risky_categories:
+    - cannabis
+    - marijuana
+    - adult
+    - gambling
+    - politics
+    - controversial
+    - entertainment_gossip
+    - lifestyle_personal
+    - dating
+    - religion
+    - weapons
+
+  # Category scoring bonuses
+  scoring:
+    perfect_match_bonus: 30        # IAB19, IAB3, IAB13 match
+    good_match_bonus: 20          # IAB15, IAB11, IAB5 match
+    moderate_match_bonus: 10      # IAB20, IAB1 (filtered)
+    risk_content_penalty: -50     # Cannabis, adult, etc.
   
 # Environment-specific overrides (optional)
 environments:
