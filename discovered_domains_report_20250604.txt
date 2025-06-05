@@ -1,11 +1,281 @@
 SERVICE-DISCOVERED DOMAINS REPORT
-Generated: 2025-06-04 07:21:03
-Total Discovered: 6
+Generated: 2025-06-04 22:47:45
+Total Discovered: 156
 ============================================================
 
+Domain: medicinenet.com
+Score: 740.4
+Analyzed: 2025-06-04 09:26:33.519350
+Source: llm_improved
+----------------------------------------
+Domain: hitconsultant.net
+Score: 462.1
+Analyzed: 2025-06-04 13:54:29.692013
+Source: llm_improved
+----------------------------------------
+Domain: marketwatch.com
+Score: 160.0
+Analyzed: 2025-06-04 12:23:17.362669
+Source: llm_improved
+----------------------------------------
+Domain: nextgov.com
+Score: 101.0
+Analyzed: 2025-06-04 13:04:59.231086
+Source: llm_improved
+----------------------------------------
+Domain: benefitspro.com
+Score: 100.0
+Analyzed: 2025-06-04 08:30:45.840252
+Source: llm_improved
+----------------------------------------
+Domain: healthcarepackaging.com
+Score: 100.0
+Analyzed: 2025-06-04 08:31:48.481616
+Source: llm_improved
+----------------------------------------
+Domain: fool.com
+Score: 100.0
+Analyzed: 2025-06-04 08:46:53.842919
+Source: llm_improved
+----------------------------------------
+Domain: bloomberg.com
+Score: 100.0
+Analyzed: 2025-06-04 08:46:55.424810
+Source: llm_improved
+----------------------------------------
+Domain: barrons.com
+Score: 100.0
+Analyzed: 2025-06-04 08:52:12.039709
+Source: llm_improved
+----------------------------------------
+Domain: nasdaq.com
+Score: 100.0
+Analyzed: 2025-06-04 08:52:13.138616
+Source: llm_improved
+----------------------------------------
+Domain: thestreet.com
+Score: 100.0
+Analyzed: 2025-06-04 08:52:13.585875
+Source: llm_improved
+----------------------------------------
+Domain: fortune.com
+Score: 100.0
+Analyzed: 2025-06-04 08:54:21.600143
+Source: llm_improved
+----------------------------------------
+Domain: healthcaredive.com
+Score: 100.0
+Analyzed: 2025-06-04 08:58:38.425822
+Source: llm_improved
+----------------------------------------
+Domain: cfodive.com
+Score: 100.0
+Analyzed: 2025-06-04 09:20:57.037811
+Source: llm_improved
+----------------------------------------
+Domain: healthmanagement.org
+Score: 100.0
+Analyzed: 2025-06-04 22:11:10.352183
+Source: llm_improved
+----------------------------------------
+Domain: ladowntownnews.com
+Score: 100.0
+Analyzed: 2025-06-04 22:20:06.400042
+Source: llm_improved
+----------------------------------------
+Domain: leadershipnow.com
+Score: 100.0
+Analyzed: 2025-06-04 22:30:17.746798
+Source: llm_improved
+----------------------------------------
+Domain: sourcingjournal.com
+Score: 100.0
+Analyzed: 2025-06-04 22:33:19.546110
+Source: llm_improved
+----------------------------------------
+Domain: ibtimes.com
+Score: 100.0
+Analyzed: 2025-06-04 22:34:16.546915
+Source: llm_improved
+----------------------------------------
+Domain: accountinginsights.org
+Score: 100.0
+Analyzed: 2025-06-04 22:35:09.990174
+Source: llm_improved
+----------------------------------------
+Domain: hospitalhealthcare.com
+Score: 100.0
+Analyzed: 2025-06-04 22:37:13.274625
+Source: llm_improved
+----------------------------------------
+Domain: espn.com
+Score: 100.0
+Analyzed: 2025-06-04 22:42:23.634825
+Source: llm_improved
+----------------------------------------
+Domain: time.com
+Score: 100.0
+Analyzed: 2025-06-04 22:42:24.241253
+Source: llm_improved
+----------------------------------------
+Domain: thehill.com
+Score: 100.0
+Analyzed: 2025-06-04 22:42:25.234896
+Source: llm_improved
+----------------------------------------
+Domain: ign.com
+Score: 100.0
+Analyzed: 2025-06-04 22:42:25.940855
+Source: llm_improved
+----------------------------------------
+Domain: politico.com
+Score: 100.0
+Analyzed: 2025-06-04 22:42:27.357644
+Source: llm_improved
+----------------------------------------
+Domain: cnn.com
+Score: 100.0
+Analyzed: 2025-06-04 22:42:28.428367
+Source: llm_improved
+----------------------------------------
+Domain: polygon.com
+Score: 100.0
+Analyzed: 2025-06-04 22:42:29.609121
+Source: llm_improved
+----------------------------------------
+Domain: si.com
+Score: 100.0
+Analyzed: 2025-06-04 22:42:31.299851
+Source: llm_improved
+----------------------------------------
+Domain: newsweek.com
+Score: 100.0
+Analyzed: 2025-06-04 22:42:33.041986
+Source: llm_improved
+----------------------------------------
+Domain: dallasobserver.com
+Score: 100.0
+Analyzed: 2025-06-04 22:42:34.652781
+Source: llm_improved
+----------------------------------------
+Domain: variety.com
+Score: 100.0
+Analyzed: 2025-06-04 22:42:35.122058
+Source: llm_improved
+----------------------------------------
+Domain: ew.com
+Score: 100.0
+Analyzed: 2025-06-04 22:42:35.956073
+Source: llm_improved
+----------------------------------------
+Domain: hollywoodreporter.com
+Score: 100.0
+Analyzed: 2025-06-04 22:42:36.714686
+Source: llm_improved
+----------------------------------------
+Domain: lifehacker.com
+Score: 100.0
+Analyzed: 2025-06-04 22:47:42.011852
+Source: llm_improved
+----------------------------------------
+Domain: gizmodo.com
+Score: 100.0
+Analyzed: 2025-06-04 22:47:42.877786
+Source: llm_improved
+----------------------------------------
+Domain: nymag.com
+Score: 100.0
+Analyzed: 2025-06-04 22:47:43.350615
+Source: llm_improved
+----------------------------------------
+Domain: mashable.com
+Score: 100.0
+Analyzed: 2025-06-04 22:47:43.992264
+Source: llm_improved
+----------------------------------------
+Domain: pcgamer.com
+Score: 100.0
+Analyzed: 2025-06-04 22:47:44.647597
+Source: llm_improved
+----------------------------------------
+Domain: vox.com
+Score: 100.0
+Analyzed: 2025-06-04 22:47:45.252091
+Source: llm_improved
+----------------------------------------
+Domain: canadiansme.ca
+Score: 98.0
+Analyzed: 2025-06-04 09:25:08.209473
+Source: llm_improved
+----------------------------------------
+Domain: worldfinancialreview.com
+Score: 98.0
+Analyzed: 2025-06-04 12:16:30.613160
+Source: llm_improved
+----------------------------------------
+Domain: investmentnews.com
+Score: 96.9
+Analyzed: 2025-06-04 08:25:19.842705
+Source: llm_improved
+----------------------------------------
+Domain: pharmavoice.com
+Score: 96.8
+Analyzed: 2025-06-04 08:34:41.708847
+Source: llm_improved
+----------------------------------------
+Domain: financialpoise.com
+Score: 95.2
+Analyzed: 2025-06-04 22:15:07.384892
+Source: llm_improved
+----------------------------------------
+Domain: fa-mag.com
+Score: 95.0
+Analyzed: 2025-06-04 09:25:04.800158
+Source: llm_improved
+----------------------------------------
+Domain: financefeeds.com
+Score: 95.0
+Analyzed: 2025-06-04 22:12:27.904766
+Source: llm_improved
+----------------------------------------
+Domain: humanresourcestoday.com
+Score: 95.0
+Analyzed: 2025-06-04 22:17:14.697298
+Source: llm_improved
+----------------------------------------
+Domain: digitalengineering247.com
+Score: 95.0
+Analyzed: 2025-06-04 22:26:08.569638
+Source: llm_improved
+----------------------------------------
+Domain: renalandurologynews.com
+Score: 92.8
+Analyzed: 2025-06-04 19:34:25.560976
+Source: llm_improved
+----------------------------------------
+Domain: dfwbusinessjournal.com
+Score: 89.4
+Analyzed: 2025-06-04 22:44:12.812260
+Source: llm_improved
+----------------------------------------
+Domain: healthcaretechoutlook.com
+Score: 89.2
+Analyzed: 2025-06-04 08:11:22.177093
+Source: llm_improved
+----------------------------------------
 Domain: hbr.org
 Score: 88.4
 Analyzed: 2025-06-03 22:42:47.424071
+Source: llm_improved
+----------------------------------------
+Domain: healthcarebusinesstoday.com
+Score: 86.4
+Analyzed: 2025-06-04 08:23:27.442606
+Source: llm_improved
+----------------------------------------
+Domain: southernbusinessjournal.com
+Score: 86.2
+Analyzed: 2025-06-04 22:26:10.552932
 Source: llm_improved
 ----------------------------------------
 Domain: pharmacytimes.com
@@ -18,9 +288,369 @@ Score: 85.4
 Analyzed: 2025-06-03 22:42:06.480497
 Source: llm_improved
 ----------------------------------------
+Domain: mdlinx.com
+Score: 84.9
+Analyzed: 2025-06-04 13:56:43.130581
+Source: llm_improved
+----------------------------------------
+Domain: clinicalomics.com
+Score: 83.3
+Analyzed: 2025-06-04 08:46:44.001894
+Source: llm_improved
+----------------------------------------
+Domain: clinicalpainadvisor.com
+Score: 82.7
+Analyzed: 2025-06-04 13:05:35.030930
+Source: llm_improved
+----------------------------------------
+Domain: healthcare-informatics.com
+Score: 82.4
+Analyzed: 2025-06-04 09:35:04.987295
+Source: llm_improved
+----------------------------------------
+Domain: hcplive.com
+Score: 82.2
+Analyzed: 2025-06-04 13:31:55.534999
+Source: llm_improved
+----------------------------------------
+Domain: ciooutlook.com
+Score: 81.9
+Analyzed: 2025-06-04 13:16:57.551249
+Source: llm_improved
+----------------------------------------
+Domain: medtechengine.com
+Score: 81.7
+Analyzed: 2025-06-04 09:19:25.769155
+Source: llm_improved
+----------------------------------------
+Domain: aapc.com
+Score: 79.8
+Analyzed: 2025-06-04 13:40:36.649374
+Source: llm_improved
+----------------------------------------
+Domain: healthcaredesignmagazine.com
+Score: 77.7
+Analyzed: 2025-06-04 09:01:46.557265
+Source: llm_improved
+----------------------------------------
+Domain: pharmaceuticalcommerce.com
+Score: 77.3
+Analyzed: 2025-06-04 08:30:30.986665
+Source: llm_improved
+----------------------------------------
+Domain: techconnectmagazine.com
+Score: 77.0
+Analyzed: 2025-06-04 22:41:04.420586
+Source: llm_improved
+----------------------------------------
+Domain: canadianlawyermag.com
+Score: 74.9
+Analyzed: 2025-06-04 22:21:10.544408
+Source: llm_improved
+----------------------------------------
+Domain: saasmag.com
+Score: 73.5
+Analyzed: 2025-06-04 09:27:37.887556
+Source: llm_improved
+----------------------------------------
+Domain: radiologybusiness.com
+Score: 71.8
+Analyzed: 2025-06-04 22:43:23.223503
+Source: llm_improved
+----------------------------------------
+Domain: arkansasmedicalnews.com
+Score: 70.8
+Analyzed: 2025-06-04 14:09:05.540324
+Source: llm_improved
+----------------------------------------
+Domain: businessinsurance.com
+Score: 70.0
+Analyzed: 2025-06-04 08:38:58.216824
+Source: llm_improved
+----------------------------------------
+Domain: bankingexchange.com
+Score: 70.0
+Analyzed: 2025-06-04 08:41:16.486369
+Source: llm_improved
+----------------------------------------
+Domain: finchannel.com
+Score: 70.0
+Analyzed: 2025-06-04 09:21:54.318806
+Source: llm_improved
+----------------------------------------
+Domain: accountancyage.com
+Score: 70.0
+Analyzed: 2025-06-04 10:13:14.821654
+Source: llm_improved
+----------------------------------------
+Domain: medicaldevice-network.com
+Score: 70.0
+Analyzed: 2025-06-04 10:24:48.726508
+Source: llm_improved
+----------------------------------------
+Domain: medtecheurope.org
+Score: 70.0
+Analyzed: 2025-06-04 13:12:39.181734
+Source: llm_improved
+----------------------------------------
+Domain: hospitalnews.com
+Score: 70.0
+Analyzed: 2025-06-04 14:01:26.375526
+Source: llm_improved
+----------------------------------------
+Domain: mlo-online.com
+Score: 70.0
+Analyzed: 2025-06-04 19:34:24.127650
+Source: llm_improved
+----------------------------------------
+Domain: clinicaltrialsarena.com
+Score: 70.0
+Analyzed: 2025-06-04 22:11:08.567480
+Source: llm_improved
+----------------------------------------
+Domain: energymanagertoday.com
+Score: 70.0
+Analyzed: 2025-06-04 22:30:27.461574
+Source: llm_improved
+----------------------------------------
+Domain: constructionworld.info
+Score: 70.0
+Analyzed: 2025-06-04 22:37:27.925290
+Source: llm_improved
+----------------------------------------
+Domain: investopro.com
+Score: 70.0
+Analyzed: 2025-06-04 22:45:47.503227
+Source: llm_improved
+----------------------------------------
+Domain: manufacturing-journal.net
+Score: 69.6
+Analyzed: 2025-06-04 12:29:32.073539
+Source: llm_improved
+----------------------------------------
+Domain: hospitalmedicine.org
+Score: 68.0
+Analyzed: 2025-06-04 13:01:36.546297
+Source: llm_improved
+----------------------------------------
+Domain: mddionline.com
+Score: 67.5
+Analyzed: 2025-06-04 08:29:13.676208
+Source: llm_improved
+----------------------------------------
+Domain: vermontbiz.com
+Score: 67.5
+Analyzed: 2025-06-04 22:31:14.810745
+Source: llm_improved
+----------------------------------------
+Domain: beckershospitalreview.com
+Score: 66.5
+Analyzed: 2025-06-04 15:46:19.734823
+Source: llm_improved
+----------------------------------------
+Domain: michiganrealestate.net
+Score: 65.9
+Analyzed: 2025-06-04 22:29:18.870459
+Source: llm_improved
+----------------------------------------
+Domain: aahks.org
+Score: 65.2
+Analyzed: 2025-06-04 15:47:50.086872
+Source: llm_improved
+----------------------------------------
+Domain: losangelestech.com
+Score: 64.2
+Analyzed: 2025-06-04 22:39:38.467806
+Source: llm_improved
+----------------------------------------
+Domain: texasrealestatenetwork.com
+Score: 64.0
+Analyzed: 2025-06-04 22:19:20.255727
+Source: llm_improved
+----------------------------------------
+Domain: medpagetoday.com
+Score: 64.0
+Analyzed: 2025-06-04 13:33:26.917330
+Source: llm_improved
+----------------------------------------
+Domain: financegeek.org
+Score: 63.5
+Analyzed: 2025-06-04 22:25:16.868900
+Source: llm_improved
+----------------------------------------
+Domain: accountingandfinancial.com
+Score: 63.5
+Analyzed: 2025-06-04 22:32:10.648280
+Source: llm_improved
+----------------------------------------
+Domain: ccbjournal.com
+Score: 63.3
+Analyzed: 2025-06-04 08:55:01.405711
+Source: llm_improved
+----------------------------------------
+Domain: iotworldmagazine.com
+Score: 61.9
+Analyzed: 2025-06-04 09:48:39.965426
+Source: llm_improved
+----------------------------------------
+Domain: biosimilardevelopment.com
+Score: 61.6
+Analyzed: 2025-06-04 22:26:13.166749
+Source: llm_improved
+----------------------------------------
+Domain: hfma.org
+Score: 60.5
+Analyzed: 2025-06-04 08:54:17.684574
+Source: llm_improved
+----------------------------------------
+Domain: cpamagazine.com
+Score: 60.2
+Analyzed: 2025-06-04 09:38:42.782188
+Source: llm_improved
+----------------------------------------
+Domain: hospitalimpact.org
+Score: 60.0
+Analyzed: 2025-06-04 08:49:27.051212
+Source: llm_improved
+----------------------------------------
+Domain: hcinnovationgroup.com
+Score: 59.5
+Analyzed: 2025-06-04 08:31:49.928583
+Source: llm_improved
+----------------------------------------
+Domain: hpnonline.com
+Score: 59.5
+Analyzed: 2025-06-04 09:01:52.214964
+Source: llm_improved
+----------------------------------------
+Domain: urbanland.uli.org
+Score: 59.1
+Analyzed: 2025-06-04 22:30:20.258990
+Source: llm_improved
+----------------------------------------
+Domain: accountancydaily.co
+Score: 58.4
+Analyzed: 2025-06-04 09:23:07.036422
+Source: llm_improved
+----------------------------------------
+Domain: datacenterdynamics.com
+Score: 58.1
+Analyzed: 2025-06-04 08:12:53.508612
+Source: llm_improved
+----------------------------------------
+Domain: seekingalpha.com
+Score: 58.1
+Analyzed: 2025-06-04 09:26:40.556341
+Source: llm_improved
+----------------------------------------
+Domain: indiainfoline.com
+Score: 57.7
+Analyzed: 2025-06-04 13:16:59.564416
+Source: llm_improved
+----------------------------------------
+Domain: acec.org
+Score: 56.7
+Analyzed: 2025-06-04 13:37:22.229766
+Source: llm_improved
+----------------------------------------
+Domain: investmenttrends.com
+Score: 54.9
+Analyzed: 2025-06-04 22:36:15.438181
+Source: llm_improved
+----------------------------------------
+Domain: pensionandbenefits.com
+Score: 54.8
+Analyzed: 2025-06-04 10:29:57.783809
+Source: llm_improved
+----------------------------------------
+Domain: legaltech.com
+Score: 54.6
+Analyzed: 2025-06-04 08:39:00.725107
+Source: llm_improved
+----------------------------------------
+Domain: newyorkenterprise.com
+Score: 54.6
+Analyzed: 2025-06-04 22:27:36.265835
+Source: llm_improved
+----------------------------------------
+Domain: iohq.net
+Score: 54.4
+Analyzed: 2025-06-04 22:19:18.652116
+Source: llm_improved
+----------------------------------------
+Domain: esportsobserver.com
+Score: 53.9
+Analyzed: 2025-06-04 22:42:38.511904
+Source: llm_improved
+----------------------------------------
+Domain: ama-assn.org
+Score: 53.5
+Analyzed: 2025-06-04 13:37:18.990645
+Source: llm_improved
+----------------------------------------
+Domain: washingtonlawreview.org
+Score: 52.5
+Analyzed: 2025-06-04 22:17:12.994655
+Source: llm_improved
+----------------------------------------
+Domain: medicalsupplychain.com
+Score: 52.3
+Analyzed: 2025-06-04 13:20:43.586169
+Source: llm_improved
+----------------------------------------
+Domain: accountingweekly.com
+Score: 51.1
+Analyzed: 2025-06-04 08:56:50.573715
+Source: llm_improved
+----------------------------------------
+Domain: constructioncoverage.com
+Score: 51.1
+Analyzed: 2025-06-04 22:11:08.209053
+Source: llm_improved
+----------------------------------------
+Domain: legaltechpublishing.com
+Score: 50.8
+Analyzed: 2025-06-04 08:42:21.398347
+Source: llm_improved
+----------------------------------------
+Domain: pharmaleaders.com
+Score: 50.4
+Analyzed: 2025-06-04 09:04:45.752344
+Source: llm_improved
+----------------------------------------
+Domain: athenahealth.com
+Score: 50.4
+Analyzed: 2025-06-04 18:50:47.718109
+Source: llm_improved
+----------------------------------------
 Domain: healthcareit.com
 Score: 50.0
 Analyzed: 2025-06-03 22:43:41.684104
+Source: llm_improved
+----------------------------------------
+Domain: medicaldirector.com
+Score: 50.0
+Analyzed: 2025-06-04 09:50:47.899932
+Source: llm_improved
+----------------------------------------
+Domain: bostonchamber.com
+Score: 50.0
+Analyzed: 2025-06-04 13:27:15.845499
+Source: llm_improved
+----------------------------------------
+Domain: aha.org
+Score: 50.0
+Analyzed: 2025-06-04 15:46:20.665710
+Source: llm_improved
+----------------------------------------
+Domain: healthcarefacilitiestoday.com
+Score: 49.7
+Analyzed: 2025-06-04 08:31:51.737511
+Source: llm_improved
+----------------------------------------
+Domain: pharmacytoday.org
+Score: 49.0
+Analyzed: 2025-06-04 22:18:18.107500
 Source: llm_improved
 ----------------------------------------
 Domain: manufacturingnews.com
@@ -28,8 +658,128 @@ Score: 48.3
 Analyzed: 2025-06-03 22:43:15.220685
 Source: llm_improved
 ----------------------------------------
+Domain: citybiz.co
+Score: 48.3
+Analyzed: 2025-06-04 08:28:19.859516
+Source: llm_improved
+----------------------------------------
+Domain: journalofaccountancy.com
+Score: 48.3
+Analyzed: 2025-06-04 08:51:19.031698
+Source: llm_improved
+----------------------------------------
+Domain: pharmalive.com
+Score: 47.6
+Analyzed: 2025-06-04 12:16:23.555864
+Source: llm_improved
+----------------------------------------
+Domain: governing.com
+Score: 46.5
+Analyzed: 2025-06-04 09:25:50.227673
+Source: llm_improved
+----------------------------------------
+Domain: medicalpracticeinsider.com
+Score: 46.0
+Analyzed: 2025-06-04 08:27:11.511630
+Source: llm_improved
+----------------------------------------
+Domain: medtechpulse.com
+Score: 45.8
+Analyzed: 2025-06-04 08:13:50.309961
+Source: llm_improved
+----------------------------------------
 Domain: cpajournal.com
 Score: 45.1
 Analyzed: 2025-06-03 22:41:02.602135
+Source: llm_improved
+----------------------------------------
+Domain: cloudhq.net
+Score: 45.1
+Analyzed: 2025-06-04 18:16:41.236727
+Source: llm_improved
+----------------------------------------
+Domain: healthinvestor.co.uk
+Score: 44.8
+Analyzed: 2025-06-04 14:19:27.048198
+Source: llm_improved
+----------------------------------------
+Domain: nacva.com
+Score: 44.1
+Analyzed: 2025-06-04 09:27:35.113927
+Source: llm_improved
+----------------------------------------
+Domain: ahrmm.org
+Score: 43.8
+Analyzed: 2025-06-04 15:47:44.318466
+Source: llm_improved
+----------------------------------------
+Domain: worldfinance.com
+Score: 43.4
+Analyzed: 2025-06-04 22:34:21.790553
+Source: llm_improved
+----------------------------------------
+Domain: medicaldevicesgroup.net
+Score: 42.7
+Analyzed: 2025-06-04 09:39:28.141035
+Source: llm_improved
+----------------------------------------
+Domain: healthcareprocurement.com
+Score: 40.9
+Analyzed: 2025-06-04 08:25:01.518386
+Source: llm_improved
+----------------------------------------
+Domain: texasmedicine.com
+Score: 40.9
+Analyzed: 2025-06-04 10:17:59.513634
+Source: llm_improved
+----------------------------------------
+Domain: cio.gov
+Score: 40.9
+Analyzed: 2025-06-04 13:45:48.816334
+Source: llm_improved
+----------------------------------------
+Domain: financeasia.com
+Score: 39.5
+Analyzed: 2025-06-04 13:02:46.723268
+Source: llm_improved
+----------------------------------------
+Domain: healthcareexecutive.org
+Score: 39.2
+Analyzed: 2025-06-04 15:58:54.187550
+Source: llm_improved
+----------------------------------------
+Domain: hcahealthcare.com
+Score: 38.8
+Analyzed: 2025-06-04 15:47:28.073973
+Source: llm_improved
+----------------------------------------
+Domain: itexpertvoice.com
+Score: 38.5
+Analyzed: 2025-06-04 09:19:20.651983
+Source: llm_improved
+----------------------------------------
+Domain: reit.com
+Score: 36.8
+Analyzed: 2025-06-04 09:35:57.195898
+Source: llm_improved
+----------------------------------------
+Domain: managedcaremag.com
+Score: 35.3
+Analyzed: 2025-06-04 22:44:58.593020
+Source: llm_improved
+----------------------------------------
+Domain: aafp.org
+Score: 35.0
+Analyzed: 2025-06-04 15:47:44.875697
+Source: llm_improved
+----------------------------------------
+Domain: newmexicoindependent.com
+Score: 35.0
+Analyzed: 2025-06-04 15:55:31.687870
+Source: llm_improved
+----------------------------------------
+Domain: realestateclarity.com
+Score: 35.0
+Analyzed: 2025-06-04 22:35:11.600829
 Source: llm_improved
 ----------------------------------------

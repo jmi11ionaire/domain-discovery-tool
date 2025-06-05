@@ -1080,11 +1080,8 @@ Think second-tier quality sites that programmatics teams would want but aren't o
             else:
                 status = 'rejected'
                 
-                # Enhanced rejection reasons with IAB context
-                iab_category = content_details.get('iab_category')
-                if not iab_category:
-                    rejection_reason = 'no_iab_category_match'
-                elif content_score < 20:
+                # Standard rejection reasons (no IAB category requirement)
+                if content_score < 20:
                     rejection_reason = 'insufficient_content'
                 elif content_score < 40 and not has_ads_txt:
                     rejection_reason = 'low_content_no_ads_txt'

@@ -65,17 +65,37 @@ class ContinuousDiscoveryService:
         self.running = False
     
     def get_current_approved_count(self) -> int:
-        """Get current count of approved domains"""
+        """Get current count of ALL approved domains from all sources"""
+        total_count = 0
+        
+        # Count from existing_domains.txt (original DSP domains)
+        try:
+            with open('existing_domains.txt', 'r') as f:
+                existing_count = len([line for line in f if line.strip() and not line.startswith('#')])
+                total_count += existing_count
+        except FileNotFoundError:
+            pass
+        
+        # Count from service_discovered_domains.txt (service discoveries)
+        try:
+            with open('service_discovered_domains.txt', 'r') as f:
+                service_count = len([line for line in f if line.strip() and not line.startswith('#')])
+                total_count += service_count
+        except FileNotFoundError:
+            pass
+        
+        # Count from database (additional approved domains)
         try:
             conn = sqlite3.connect(self.db_path)
             cursor = conn.cursor()
             cursor.execute("SELECT COUNT(*) FROM domains_analyzed WHERE current_status = 'approved'")
-            count = cursor.fetchone()[0]
+            db_count = cursor.fetchone()[0]
             conn.close()
-            return count
+            total_count += db_count
         except Exception as e:
-            print(f"Error getting approved count: {e}")
-            return 0
+            print(f"Warning: Could not read database count: {e}")
+        
+        return total_count
     
     def calculate_time_estimates(self, current_count: int, domains_needed: int) -> Dict:
         """Calculate time estimates based on current performance with safe division"""
