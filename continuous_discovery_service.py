@@ -195,6 +195,9 @@ class ContinuousDiscoveryService:
                 if self.cd_config.get('save_progress_every_batch', True):
                     self.save_progress_checkpoint(current_count + result.get('approved', 0))
                 
+            except ZeroDivisionError:
+                print(f"❌ Batch {self.batch_count + 1} failed: division by zero")
+                print("   Continuing with next batch...")
             except Exception as e:
                 print(f"❌ Batch {self.batch_count + 1} failed: {e}")
                 print("   Continuing with next batch...")
