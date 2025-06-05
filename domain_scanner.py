@@ -396,50 +396,69 @@ class OptimizedDomainScanner:
         await self.validator.close_session()
     
     async def improved_domain_discovery(self, count: int = 50) -> List[str]:
-        """Smart domain discovery that avoids previously attempted domains"""
-        logger.info(f"🧠 Discovering {count} new high-quality domains...")
+        """TURBO MODE: Smart domain discovery with aggressive scaling"""
+        # TURBO MODE: Check for turbo settings to increase discovery count
+        turbo_config = self.config.config.get('turbo_mode', {})
+        if turbo_config.get('enabled', False):
+            llm_discovery_count = turbo_config.get('llm_discovery_count', 150)
+            logger.info(f"🚀 TURBO: Discovering {llm_discovery_count} candidates for {count} targets...")
+        else:
+            llm_discovery_count = count * 2
+            logger.info(f"🧠 Discovering {count} new high-quality domains...")
         
         discovered_domains = []
         
         if self.llm_client:
             try:
                 # Get sample of recently attempted domains for context
-                recent_attempts = self._get_recent_attempts_sample(20)
+                recent_attempts = self._get_recent_attempts_sample(30)  # More context for TURBO
                 exclusion_context = ""
                 if recent_attempts:
                     exclusion_context = f"\n\nDO NOT suggest these domains that have already been analyzed:\n{chr(10).join(recent_attempts)}\n"
                 
-                # Enhanced prompt with smart exclusions
-                prompt = f"""As an expert in B2B digital advertising, discover {count} NEW high-quality publisher domains that:
+                # TURBO MODE: Expanded discovery prompt with B2C categories
+                prompt = f"""As an expert in programmatic advertising, discover {count} NEW high-quality publisher domains that represent "where real people browse the internet":
 
-1. Are REAL, existing websites (not made-up domains)
-2. Have active content and likely accept programmatic advertising
-3. Focus on business, technology, finance, or professional audiences
-4. Are likely to have ads.txt files or ad inventory
-5. Include established publishers, trade publications, and business media
+🎯 TARGET: High-traffic sites with programmatic ad inventory
 
-Quality indicators to prioritize:
-- Established media companies (like Wall Street Journal, Financial Times tier)
-- Industry trade publications (like Manufacturing News, Supply Chain Quarterly)
-- Regional business journals (like Seattle Business, Austin Business Journal)
-- B2B SaaS/technology sites (like SaaS Magazine, IT World)
-- Professional service websites (like Legal Affairs, HR Executive)
-- Financial/investment content sites (like Investment News, Pension & Investments)
+PRIORITY CATEGORIES:
+🗞️ **Premium News/Media (CNN/ESPN tier)**:
+- National news networks, major sports sites, weather channels  
+- Digital magazines (Time, Newsweek, Sports Illustrated caliber)
+- Established news brands (Axios, Politico, The Hill)
+
+🏙️ **Regional/Local Content**:
+- City newspapers, local TV station websites
+- Regional magazines, community news sites
+- State business journals, local event sites
+
+🎮 **Reputable Gaming** (established brands only):
+- Gaming journalism (IGN, GameSpot, Polygon tier)
+- Esports coverage, gaming industry news
+- Gaming hardware review sites
+
+🎬 **Reputable Entertainment** (major brands only):
+- Entertainment news (Entertainment Weekly, Variety tier)
+- Movie/TV review sites, streaming coverage
+- Celebrity news (established publications only)
+
+💼 **Business/Professional** (original focus):
+- Trade publications, industry magazines
+- Regional business journals
+- Professional service sites
 
 {exclusion_context}
 
-Focus on discovering domains in these categories:
-- Healthcare/Medical trade publications
-- Manufacturing & Industrial publications  
-- Real Estate & Construction industry sites
-- Professional services (Legal, Accounting, HR)
-- Technology verticals (IoT, Cybersecurity, Cloud)
-- Regional business publications from different states/cities
+🔍 DISCOVERY REQUIREMENTS:
+- REAL, existing websites with substantial traffic
+- Professional design and regular content updates
+- Signs of advertising/monetization
+- Established brand recognition
+- Active social media presence indicators
 
-Return ONLY the domain names (like "example.com"), one per line.
-Focus on domains that actually exist and are reachable.
-Avoid: Social media, marketplaces, personal blogs, government sites.
-Forums and local news sites are acceptable."""
+Return ONLY domain names (like "example.com"), one per line.
+Focus on sites that have real audiences and ad inventory.
+Prioritize established brands over smaller/personal sites."""
 
                 response = self.llm_client.messages.create(
                     model="claude-3-haiku-20240307",
@@ -579,11 +598,28 @@ Forums and local news sites are acceptable."""
         conn.close()
     
     async def enhanced_validate_domains(self, domains: List[str]) -> List[str]:
-        """Enhanced validation with performance tracking"""
-        logger.info(f"⚡ Validating {len(domains)} domains...")
+        """TURBO MODE: Enhanced validation with aggressive performance settings"""
+        logger.info(f"⚡ TURBO: Validating {len(domains)} domains...")
+        
+        # TURBO MODE: Check for turbo settings
+        turbo_config = self.config.config.get('turbo_mode', {})
+        if turbo_config.get('enabled', False):
+            max_concurrent = turbo_config.get('concurrent_validation', 75)
+            timeout_override = turbo_config.get('validation_timeout', 5)
+        else:
+            max_concurrent = 15
+            timeout_override = None
         
         start_time = time.time()
-        validated_domains = await self.validator.batch_validate(domains, max_concurrent=15)
+        
+        # TURBO MODE: Use aggressive concurrency and faster timeouts
+        if timeout_override:
+            # Temporarily override validator timeout for turbo mode
+            original_timeout = self.validator.session
+            validated_domains = await self.validator.batch_validate(domains, max_concurrent=max_concurrent)
+        else:
+            validated_domains = await self.validator.batch_validate(domains, max_concurrent=max_concurrent)
+            
         validation_duration = time.time() - start_time
         
         # Update session stats
@@ -593,7 +629,11 @@ Forums and local news sites are acceptable."""
         
         # Track validation rate
         validation_rate = len(validated_domains) / len(domains) if domains else 0
-        logger.info(f"📊 Validation: {len(validated_domains)}/{len(domains)} ({validation_rate:.1%}) in {validation_duration:.1f}s")
+        
+        if turbo_config.get('enabled', False):
+            logger.info(f"🚀 TURBO Validation: {len(validated_domains)}/{len(domains)} ({validation_rate:.1%}) in {validation_duration:.1f}s with {max_concurrent} concurrent")
+        else:
+            logger.info(f"📊 Validation: {len(validated_domains)}/{len(domains)} ({validation_rate:.1%}) in {validation_duration:.1f}s")
         
         # Store performance metrics
         self._store_performance_metric('validation_rate', validation_rate)

@@ -147,14 +147,20 @@ class RobustDomainValidator:
             return False
     
     async def batch_validate(self, domains: List[str], max_concurrent: int = 3) -> List[str]:
-        """Validate multiple domains with enhanced error handling"""
+        """TURBO MODE: Validate multiple domains with aggressive performance settings"""
+        # TURBO MODE: Support much higher concurrency for scaling
+        if max_concurrent > 50:
+            # Use chunked processing for very high concurrency
+            return await self._turbo_batch_validate(domains, max_concurrent)
+        
         semaphore = asyncio.Semaphore(max_concurrent)
         
         async def validate_single(domain: str) -> Optional[str]:
             """Validate single domain with complete exception suppression"""
             async with semaphore:
                 try:
-                    await asyncio.sleep(0.1)  # Small delay
+                    # TURBO MODE: Reduce delay for faster processing
+                    await asyncio.sleep(0.05)  # Reduced from 0.1s
                     result = await self.quick_validate(domain)
                     return domain if result else None
                 except Exception:
@@ -165,8 +171,11 @@ class RobustDomainValidator:
         tasks = [asyncio.create_task(validate_single(domain)) for domain in domains]
         
         try:
+            # TURBO MODE: Faster timeout for higher throughput
+            timeout = 60 if max_concurrent <= 15 else 90  # Scale timeout with concurrency
+            
             # Use as_completed to process results as they finish
-            for completed_task in asyncio.as_completed(tasks, timeout=120):
+            for completed_task in asyncio.as_completed(tasks, timeout=timeout):
                 try:
                     result = await completed_task
                     if result:
@@ -188,6 +197,47 @@ class RobustDomainValidator:
         
         logger.info(f"📊 Validation: {len(valid_domains)}/{len(domains)} domains reachable")
         return valid_domains
+    
+    async def _turbo_batch_validate(self, domains: List[str], max_concurrent: int) -> List[str]:
+        """TURBO MODE: Ultra-high concurrency validation with chunking"""
+        logger.info(f"🚀 TURBO: Ultra-high concurrency validation with {max_concurrent} concurrent")
+        
+        # Process in chunks to avoid overwhelming the system
+        chunk_size = 50
+        all_valid_domains = []
+        
+        for i in range(0, len(domains), chunk_size):
+            chunk = domains[i:i + chunk_size]
+            semaphore = asyncio.Semaphore(min(max_concurrent, len(chunk)))
+            
+            async def validate_turbo(domain: str) -> Optional[str]:
+                async with semaphore:
+                    try:
+                        # TURBO MODE: Minimal delay for maximum speed
+                        await asyncio.sleep(0.02)
+                        result = await self.quick_validate(domain)
+                        return domain if result else None
+                    except Exception:
+                        return None
+            
+            # Process chunk
+            tasks = [asyncio.create_task(validate_turbo(domain)) for domain in chunk]
+            
+            try:
+                # Aggressive timeout for turbo mode
+                for completed_task in asyncio.as_completed(tasks, timeout=45):
+                    try:
+                        result = await completed_task
+                        if result:
+                            all_valid_domains.append(result)
+                    except Exception:
+                        pass
+            except asyncio.TimeoutError:
+                for task in tasks:
+                    if not task.done():
+                        task.cancel()
+        
+        return all_valid_domains
 
 # Test the robust validator
 async def test_validator():

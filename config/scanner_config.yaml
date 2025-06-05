@@ -2,7 +2,7 @@
 # Based on comprehensive analysis findings
 
 scoring:
-  # Lowered from 40 to 35 based on analysis of 49 borderline quality domains
+  # Quality threshold maintained at 35 for 10K scaling
   approval_threshold: 35
   
   # Content scoring weights
@@ -45,13 +45,22 @@ analysis:
 
 # Continuous Discovery Service Settings
 continuous_discovery:
-  target_total_domains: 500           # Stop when we reach this many approved domains
-  batch_size: 20                      # Domains to process per batch
-  delay_between_batches: 30           # Seconds to wait between batches
+  target_total_domains: 10000         # TURBO MODE: Scale to 10K domains
+  batch_size: 100                     # TURBO MODE: 5x larger batches
+  delay_between_batches: 2            # TURBO MODE: Minimal delays
   max_runtime_hours: 24               # Safety limit - stop after this many hours
   progress_report_interval: 5         # Report progress every N batches
   auto_export_on_completion: true     # Export domains when target reached
   save_progress_every_batch: true     # Save progress after each batch
+
+# TURBO MODE Performance Settings
+turbo_mode:
+  enabled: true
+  concurrent_validation: 75           # 5x more concurrent domain checks
+  llm_discovery_count: 150           # 5x more domains per LLM call
+  validation_timeout: 5              # 3x faster validation timeout
+  parallel_pipelines: 4             # Multiple discovery streams
+  high_throughput_scoring: true     # Optimized scoring for speed
   
 # Environment-specific overrides (optional)
 environments:
