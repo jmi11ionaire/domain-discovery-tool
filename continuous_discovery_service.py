@@ -65,37 +65,16 @@ class ContinuousDiscoveryService:
         self.running = False
     
     def get_current_approved_count(self) -> int:
-        """Get current count of ALL approved domains from all sources"""
-        total_count = 0
-        
-        # Count from existing_domains.txt (original DSP domains)
+        """Get current count from consolidated duplicate-free domain list"""
+        # Use consolidated file that has all unique domains (3,961 total)
         try:
-            with open('existing_domains.txt', 'r') as f:
-                existing_count = len([line for line in f if line.strip() and not line.startswith('#')])
-                total_count += existing_count
+            with open('consolidated_approved_domains.txt', 'r') as f:
+                total_count = len([line for line in f if line.strip() and not line.startswith('#')])
+                print(f"📊 CONSOLIDATED APPROVED DOMAINS (duplicate-free): {total_count}")
+                return total_count
         except FileNotFoundError:
-            pass
-        
-        # Count from service_discovered_domains.txt (service discoveries)
-        try:
-            with open('service_discovered_domains.txt', 'r') as f:
-                service_count = len([line for line in f if line.strip() and not line.startswith('#')])
-                total_count += service_count
-        except FileNotFoundError:
-            pass
-        
-        # Count from database (additional approved domains)
-        try:
-            conn = sqlite3.connect(self.db_path)
-            cursor = conn.cursor()
-            cursor.execute("SELECT COUNT(*) FROM domains_analyzed WHERE current_status = 'approved'")
-            db_count = cursor.fetchone()[0]
-            conn.close()
-            total_count += db_count
-        except Exception as e:
-            print(f"Warning: Could not read database count: {e}")
-        
-        return total_count
+            print("📊 Warning: consolidated_approved_domains.txt not found")
+            return 0
     
     def calculate_time_estimates(self, current_count: int, domains_needed: int) -> Dict:
         """Calculate time estimates based on current performance with safe division"""

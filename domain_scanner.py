@@ -316,16 +316,16 @@ class OptimizedDomainScanner:
         """Load ALL previously attempted domains (smart memory)"""
         attempted_domains = set()
         
-        # Load from existing_domains.txt (original DSP domains)
+        # Load from docs/existing_domains.txt (original DSP domains)
         try:
-            with open('existing_domains.txt', 'r') as f:
+            with open('docs/existing_domains.txt', 'r') as f:
                 for line in f:
                     domain = line.strip().replace('www.', '')
                     if domain and not line.startswith('#'):
                         attempted_domains.add(domain)
-            logger.info(f"Loaded {len(attempted_domains)} domains from existing_domains.txt")
+            logger.info(f"Loaded {len(attempted_domains)} domains from docs/existing_domains.txt")
         except FileNotFoundError:
-            logger.warning("existing_domains.txt not found")
+            logger.warning("docs/existing_domains.txt not found")
         
         # Load from service_discovered_domains.txt (service discoveries)
         try:
