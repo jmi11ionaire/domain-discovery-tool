@@ -998,13 +998,18 @@ Forums and local news sites are acceptable."""
             # Update session completion
             self._complete_session(session_id, discovered_domains, validated_domains, approved_results)
             
-            # Final stats
+            # Final stats with safe division
             runtime = time.time() - self.session_stats['start_time']
             
+            # Safe rate calculations to prevent division by zero
+            discovery_rate = (len(validated_domains)/max(1, len(discovered_domains))*100) if discovered_domains else 0.0
+            approval_rate = (len(approved_results)/max(1, len(validated_domains))*100) if validated_domains else 0.0
+            processing_rate = (len(validated_domains)/max(0.1, runtime/60)) if runtime > 0 else 0.0
+            
             print(f"\n📈 OPTIMIZED PIPELINE COMPLETE")
-            print(f"   Discovery rate: {len(validated_domains)/len(discovered_domains)*100:.1f}%")
-            print(f"   Approval rate: {len(approved_results)/len(validated_domains)*100:.1f}% (of validated)")
-            print(f"   Processing rate: {len(validated_domains)/(runtime/60):.1f} domains/minute")
+            print(f"   Discovery rate: {discovery_rate:.1f}%")
+            print(f"   Approval rate: {approval_rate:.1f}% (of validated)")
+            print(f"   Processing rate: {processing_rate:.1f} domains/minute")
             print(f"   New approvals: {len(approved_results)}")
             
             return {
