@@ -410,55 +410,84 @@ class OptimizedDomainScanner:
         
         if self.llm_client:
             try:
-                # Get sample of recently attempted domains for context
-                recent_attempts = self._get_recent_attempts_sample(30)  # More context for TURBO
-                exclusion_context = ""
-                if recent_attempts:
-                    exclusion_context = f"\n\nDO NOT suggest these domains that have already been analyzed:\n{chr(10).join(recent_attempts)}\n"
+                # Get comprehensive samples from all existing domain sources
+                recent_attempts = self._get_recent_attempts_sample(50)
+                existing_samples = self._get_existing_domain_samples(100)
+                service_samples = self._get_service_domain_samples(50)
                 
-                # TURBO MODE: Expanded discovery prompt with B2C categories
-                prompt = f"""As an expert in programmatic advertising, discover {count} NEW high-quality publisher domains that represent "where real people browse the internet":
+                exclusion_context = ""
+                all_exclusions = []
+                
+                if recent_attempts:
+                    all_exclusions.extend(recent_attempts)
+                if existing_samples:
+                    all_exclusions.extend(existing_samples)
+                if service_samples:
+                    all_exclusions.extend(service_samples)
+                
+                if all_exclusions:
+                    # Remove duplicates and limit to most relevant
+                    unique_exclusions = list(set(all_exclusions))[:150]  # Cap for prompt size
+                    exclusion_context = f"\n\nDO NOT suggest these domains - they are already in our lists:\n{chr(10).join(unique_exclusions)}\n\nAvoid domains similar to these and find NEW, different sites.\n"
+                
+                # TURBO MODE: Enhanced prompt to avoid obvious tier-1 domains
+                prompt = f"""As an expert in programmatic advertising, discover {count} NEW high-quality but LESS OBVIOUS publisher domains for a 10K domain scaling project:
 
-🎯 TARGET: High-traffic sites with programmatic ad inventory
+🚫 **AVOID OBVIOUS TIER-1 DOMAINS** (these are too well-known):
+- Major networks: CNN, ESPN, Fox, NBC, ABC, CBS, etc.
+- Big tech: Google, Facebook, Apple, Microsoft, Amazon, etc.  
+- Major publications: Time, Newsweek, WSJ, NYT, Washington Post, etc.
+- Gaming giants: IGN, GameSpot, Kotaku, etc.
+- Entertainment majors: Variety, Entertainment Weekly, TMZ, etc.
 
-PRIORITY CATEGORIES:
-🗞️ **Premium News/Media (CNN/ESPN tier)**:
-- National news networks, major sports sites, weather channels  
-- Digital magazines (Time, Newsweek, Sports Illustrated caliber)
-- Established news brands (Axios, Politico, The Hill)
+🎯 **TARGET: Quality but less obvious domains**:
 
-🏙️ **Regional/Local Content**:
-- City newspapers, local TV station websites
-- Regional magazines, community news sites
-- State business journals, local event sites
+🗞️ **Regional/Niche News & Media**:
+- State/city newspapers (not major metros)
+- Industry-specific news sites
+- Regional sports coverage
+- Local TV station websites
+- Niche magazine websites
 
-🎮 **Reputable Gaming** (established brands only):
-- Gaming journalism (IGN, GameSpot, Polygon tier)
-- Esports coverage, gaming industry news
-- Gaming hardware review sites
-
-🎬 **Reputable Entertainment** (major brands only):
-- Entertainment news (Entertainment Weekly, Variety tier)
-- Movie/TV review sites, streaming coverage
-- Celebrity news (established publications only)
-
-💼 **Business/Professional** (original focus):
-- Trade publications, industry magazines
+🏙️ **Local & Regional Business**:
+- Chamber of commerce sites
 - Regional business journals
-- Professional service sites
+- Local event/tourism sites  
+- City-specific lifestyle magazines
+- State trade organization sites
+
+🎮 **Gaming & Tech (avoid majors)**:
+- Gaming hardware review sites
+- Esports team/league sites
+- Gaming community forums
+- Tech review smaller sites
+- Industry trade publications
+
+🎬 **Entertainment & Lifestyle (niche)**:
+- Independent movie/TV blogs
+- Regional entertainment guides
+- Hobby/interest communities
+- Music scene publications
+- Local arts/culture sites
+
+💼 **Professional Services**:
+- Industry associations
+- Professional development sites
+- Trade publication websites
+- Certification/training sites
+- B2B service company blogs
 
 {exclusion_context}
 
-🔍 DISCOVERY REQUIREMENTS:
-- REAL, existing websites with substantial traffic
-- Professional design and regular content updates
-- Signs of advertising/monetization
-- Established brand recognition
-- Active social media presence indicators
+🔍 **REQUIREMENTS**:
+- REAL websites with actual content and traffic
+- Professional appearance with ad potential
+- NOT personal blogs or tiny sites
+- NOT obvious Fortune 500 company sites
+- Focus on "hidden gems" with quality content
 
 Return ONLY domain names (like "example.com"), one per line.
-Focus on sites that have real audiences and ad inventory.
-Prioritize established brands over smaller/personal sites."""
+Think second-tier quality sites that programmatics teams would want but aren't obvious."""
 
                 response = self.llm_client.messages.create(
                     model="claude-3-haiku-20240307",
@@ -526,6 +555,36 @@ Prioritize established brands over smaller/personal sites."""
             recent = [row[0] for row in cursor.fetchall()]
             conn.close()
             return recent
+        except Exception:
+            return []
+    
+    def _get_existing_domain_samples(self, limit: int = 100) -> List[str]:
+        """Get sample of domains from existing_domains.txt"""
+        try:
+            with open('existing_domains.txt', 'r') as f:
+                domains = []
+                for line in f:
+                    domain = line.strip().replace('www.', '')
+                    if domain and not line.startswith('#'):
+                        domains.append(domain)
+                        if len(domains) >= limit:
+                            break
+                return domains
+        except Exception:
+            return []
+    
+    def _get_service_domain_samples(self, limit: int = 50) -> List[str]:
+        """Get sample of domains from service_discovered_domains.txt"""
+        try:
+            with open('service_discovered_domains.txt', 'r') as f:
+                domains = []
+                for line in f:
+                    domain = line.strip().replace('www.', '')
+                    if domain and not line.startswith('#'):
+                        domains.append(domain)
+                        if len(domains) >= limit:
+                            break
+                return domains
         except Exception:
             return []
     
